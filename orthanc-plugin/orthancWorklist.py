@@ -13,9 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with [Integration of Orthanc with OpenMRS]. If not, see <https://www.gnu.org/licenses/>.
 
-import json
 import orthanc
 import requests
+import json
 
 
 def OnWorkList(answers, query, issuerAet, calledAet):
@@ -50,23 +50,86 @@ def OnChange(changeType, level, resource):
     if changeType == orthanc.ChangeType.STABLE_STUDY:
         try:
             studyJson = json.loads(orthanc.RestApiGet("/studies/"+resource))
-            studyInstanceUID = studyJson["MainDicomTags"]["StudyInstanceUID"]
+            studyTags = studyJson["MainDicomTags"]
+            studyInfo = {
+                "accessionNumber": studyTags.get("AccessionNumber"),
+                "studyInstanceUID": studyTags.get("StudyInstanceUID"),
+                "referringPhysicianName": studyTags.get("ReferringPhysicianName"),
+                "studyDescription": studyTags.get("StudyDescription"),
+                "studyID": studyTags.get("StudyID")
+            }
+
+            # store all series here
+            allSeries = []
+
+            # studyInstanceUID = studyJson["MainDicomTags"]["StudyInstanceUID"]
             if "Series" in studyJson:
                 for seriesID in studyJson["Series"]:
                     stepID = None
                     seriesJson = json.loads(orthanc.RestApiGet("/series/" + seriesID))
-                    if "PerformedProcedureStepID" in seriesJson:
+                    seriesTags = seriesJson["MainDicomTags"]
+
+                    # Extract needed series-level fields
+                    seriesInfo = {
+                        "seriesID": seriesID,
+                        "modality": seriesTags.get("Modality"),
+                        "seriesDescription": seriesTags.get("SeriesDescription"),
+                        "seriesInstanceUID": seriesTags.get("SeriesInstanceUID"),
+                        "stationName": seriesTags.get("StationName"),
+                        "parentStudy": studyJson.get("ParentStudy")
+                    }
+                    # Find performedProcedureStepID
+                    if "performedProcedureStepID" in seriesJson:
                         stepID = seriesJson["PerformedProcedureStepID"]
+
+                    # If not in series, check an instance from this series
+                    instanceInfo = {}
                     if stepID is None and "Instances" in seriesJson and len(seriesJson["Instances"])>0:
                         instanceJson = json.loads(orthanc.RestApiGet("/instances/" + seriesJson["Instances"][0] + "/tags?simplify"))
+
                         if "PerformedProcedureStepID" in instanceJson:
                             stepID = instanceJson["PerformedProcedureStepID"]
 
-                    orthanc.LogWarning("Step ID of stable series of study " + studyInstanceUID + ": "+str(stepID))
+                        # Extract needed instance-level fields
+                        instanceInfo = {
+                            "patientBirthDate": instanceJson.get("PatientBirthDate"),
+                            "patientID": instanceJson.get("PatientID"),
+                            "patientName": instanceJson.get("PatientName"),
+                            "performedProcedureStepID": instanceJson.get("PerformedProcedureStepID"),
+                            "studyInstanceUID": instanceJson.get("StudyInstanceUID"),
+                            "numberOfSlices": instanceJson.get("NumberOfSlices"),
+                            "scheduledPerformingPhysician": instanceJson.get("PerformingPhysicianName"),
+                            "performedProcedureStepDescription": instanceJson.get("PerformedProcedureStepDescription"),
+                            "performedProcedureStepStartDate": instanceJson.get("PerformedProcedureStepStartDate"),
+                            "performedProcedureStepStartTime": instanceJson.get("PerformedProcedureStepStartTime"),
+                            "requestedProcedureDescription": instanceJson.get("RequestedProcedureDescription"),
+                        }
+
+                    orthanc.LogWarning("Step ID of stable series " + seriesID +
+                                       "in study " + studyTags.get("StudyInstanceUID") +
+                                       ": "+str(stepID))
+                    # store this series entry
+                    allSeries.append({
+                        "seriesInfo": seriesInfo,
+                        "instanceInfo": instanceInfo,
+                        "performedProcedureStepID": stepID
+                    })
                     if stepID is not None:
                         try:
-                            postUrl = updateRequestStatusURL+"?studyInstanceUID=" + studyInstanceUID + "&performedProcedureStepID=" + str(stepID)
-                            response = requests.post(postUrl, auth=(worklistUsername, worklistPassword))
+                            # Final payload with all series info
+                            payload = {
+                                "studyInfo": studyInfo,
+                                "seriesList": allSeries
+                            }
+                            orthanc.LogWarning("Payload: " + json.dumps(payload, indent=2))
+
+                            # postUrl = updateRequestStatusURL+"?studyInstanceUID=" + studyTags.get("StudyInstanceUID") + "&performedProcedureStepID=" + str(stepID)
+                            response = requests.post(
+                                # postUrl,
+                                updateRequestStatusURL,
+                                json = payload,
+                                auth=(worklistUsername, worklistPassword)
+                            )
                             response.raise_for_status()
                         except requests.RequestException as e:
                             orthanc.LogError(f"Failed to update procedure step status: {str(e)}")

@@ -13,7 +13,7 @@ public class RequestProcedureStepTest {
 		step.setRequestProcedure(procedure);
 		step.setModality("CT");
 		step.setAetTitle("AET123");
-		step.setScheduledReferringPhysician("Dr. House");
+		step.setScheduledPerformingPhysician("Dr. House");
 		step.setRequestedProcedureDescription("CT Chest");
 		step.setStepStartDate("2025-07-03");
 		step.setStepStartTime("14:30");
@@ -24,7 +24,7 @@ public class RequestProcedureStepTest {
 		assertEquals(procedure, step.getRequestProcedure());
 		assertEquals("CT", step.getModality());
 		assertEquals("AET123", step.getAetTitle());
-		assertEquals("Dr. House", step.getScheduledReferringPhysician());
+		assertEquals("Dr. House", step.getScheduledPerformingPhysician());
 		assertEquals("CT Chest", step.getRequestedProcedureDescription());
 		assertEquals("2025-07-03", step.getStepStartDate());
 		assertEquals("14:30", step.getStepStartTime());
@@ -41,7 +41,7 @@ public class RequestProcedureStepTest {
 		
 		assertEquals(procedure, step.getRequestProcedure());
 		assertEquals("MRI", step.getModality());
-		assertEquals("Dr. Cuddy", step.getScheduledReferringPhysician());
+		assertEquals("Dr. Cuddy", step.getScheduledPerformingPhysician());
 		assertEquals("MRI Brain", step.getRequestedProcedureDescription());
 		assertEquals("AET456", step.getAetTitle());
 		assertEquals("2025-07-04", step.getStepStartDate());

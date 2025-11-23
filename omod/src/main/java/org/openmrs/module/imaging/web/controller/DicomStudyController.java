@@ -166,7 +166,6 @@ public class DicomStudyController {
 	/**
 	 * @param file The DICOM study files that should be uploaded to the Orthanc server."
 	 * @param configurationId The configuration ID
-	 * @throws IOException
 	 */
 	@RequestMapping(value = "/instances", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional

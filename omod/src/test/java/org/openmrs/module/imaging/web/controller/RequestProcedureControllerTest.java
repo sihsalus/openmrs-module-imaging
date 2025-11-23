@@ -1,5 +1,6 @@
 package org.openmrs.module.imaging.web.controller;
 
+import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.openmrs.Patient;
@@ -18,7 +19,6 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -52,23 +52,32 @@ public class RequestProcedureControllerTest extends BaseWebControllerTest {
 		RequestProcedureService requestProcedureService = Context.getService(RequestProcedureService.class);
 		RequestProcedureStepService requestProcedureStepService = Context.getService(RequestProcedureStepService.class);
 
-		RequestProcedure requestProcedure = requestProcedureService.getRequestProcedure(1); // scheduled procedure
+		RequestProcedure requestProcedure = requestProcedureService.getRequestProcedure(1);// scheduled procedure
 		assertNotNull(requestProcedure);
 
 		List<RequestProcedureStep> steps = requestProcedureStepService.getAllStepByRequestProcedure(requestProcedure);
 		assertFalse(steps.isEmpty());
 
-		RequestProcedureStep stepToUpdate = steps.get(0);
+		RequestProcedureStep step = steps.get(0);
 
-		String jsonRequestContent = "{}";
+        StudyUpdatePayload payload = getStudyUpdatePayload(requestProcedure, step);
+
+        // Convert payload to JSON
+        String jsonRequestContent = new ObjectMapper().writeValueAsString(payload);
+
 		MockHttpServletRequest request = newPostRequest("/rest/v1/worklist/updaterequeststatus?studyInstanceUID="
 				+ requestProcedure.getStudyInstanceUID()
-				+ "&performedProcedureStepID="+ stepToUpdate.getId().toString(), jsonRequestContent);
+				+ "&performedProcedureStepID="+ step.getId().toString(), jsonRequestContent);
 
 		MockHttpServletResponse response = new MockHttpServletResponse();
-		controller.updateRequestStatus(request, response, requestProcedure.getStudyInstanceUID(), String.valueOf(stepToUpdate.getId()));
 
-		RequestProcedureStep updatedStep = requestProcedureStepService.getProcedureStep(stepToUpdate.getId());
+		controller.updateRequestStatus(
+                request,
+                response,
+                payload
+        );
+
+		RequestProcedureStep updatedStep = requestProcedureStepService.getProcedureStep(step.getId());
 		assertEquals("completed", updatedStep.getPerformedProcedureStepStatus());
 
 		RequestProcedure updatedProcedure = requestProcedureService.getRequestProcedure(requestProcedure.getId());
@@ -81,6 +90,28 @@ public class RequestProcedureControllerTest extends BaseWebControllerTest {
 		if (allCompleted) {
 			assertEquals("completed", updatedProcedure.getStatus());
 		}
+	}
+	
+	private static StudyUpdatePayload getStudyUpdatePayload(RequestProcedure requestProcedure,
+	        RequestProcedureStep step) {
+		StudyUpdatePayload payload = new StudyUpdatePayload();
+		
+		// StudyInfo
+		StudyUpdatePayload.StudyInfo info = new StudyUpdatePayload.StudyInfo();
+		info.setStudyInstanceUID(requestProcedure.getStudyInstanceUID());
+		payload.setStudyInfo(info);
+
+		StudyUpdatePayload.SeriesEntry entry = new StudyUpdatePayload.SeriesEntry();
+		entry.setPerformedProcedureStepID(step.getId().toString());
+
+        StudyUpdatePayload.InstanceInfo instance = new StudyUpdatePayload.InstanceInfo();
+        instance.setPerformedProcedureStepID(step.getId().toString());
+        instance.setStudyInstanceUID(requestProcedure.getStudyInstanceUID());
+
+        List<StudyUpdatePayload.SeriesEntry> list = new ArrayList<>();
+        list.add(entry);
+		payload.setSeriesList(list);
+		return payload;
 	}
 	
 	@Test
@@ -125,7 +156,7 @@ public class RequestProcedureControllerTest extends BaseWebControllerTest {
 		stepPostData.put("requestId", requestProcedure.getId());
 		stepPostData.put("modality", "CT");
 		stepPostData.put("aetTitle", "CT_AET1");
-		stepPostData.put("scheduledReferringPhysician", "Dr. Smith");
+		stepPostData.put("scheduledPerformingPhysician", "Dr. Smith");
 		stepPostData.put("requestedProcedureDescription", "Chest CT");
 		stepPostData.put("stepStartDate", "2025-08-25");
 		stepPostData.put("stepStartTime", "10:00:00");
@@ -144,7 +175,7 @@ public class RequestProcedureControllerTest extends BaseWebControllerTest {
 		boolean found = steps.stream().anyMatch(step ->
 						"CT".equals(step.getModality()) &&
 						"CT_AET1".equals(step.getAetTitle()) &&
-						"Dr. Smith".equals(step.getScheduledReferringPhysician()) &&
+						"Dr. Smith".equals(step.getScheduledPerformingPhysician()) &&
 						"Chest CT".equals(step.getRequestedProcedureDescription()) &&
 						"scheduled".equals(step.getPerformedProcedureStepStatus())
 				);

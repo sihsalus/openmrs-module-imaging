@@ -27,7 +27,7 @@ public class RequestProcedureStep extends BaseOpenmrsData implements java.io.Ser
 	
 	private String aetTitle;
 	
-	private String scheduledReferringPhysician;
+	private String scheduledPerformingPhysician;
 	
 	private String requestedProcedureDescription;
 	
@@ -44,13 +44,13 @@ public class RequestProcedureStep extends BaseOpenmrsData implements java.io.Ser
 	public RequestProcedureStep() {
 	}
 	
-	public RequestProcedureStep(RequestProcedure requestProcedure, String modality, String scheduledReferringPhysician,
+	public RequestProcedureStep(RequestProcedure requestProcedure, String modality, String scheduledPerformingPhysician,
 	    String requestedProcedureDescription, String aetTitle, String stepStartDate, String stepStartTime,
 	    String performedProcedureStepStatus, String stationName, String procedureStepLocation) {
 		this.requestProcedure = requestProcedure;
 		this.modality = modality;
 		this.aetTitle = aetTitle;
-		this.scheduledReferringPhysician = scheduledReferringPhysician;
+		this.scheduledPerformingPhysician = scheduledPerformingPhysician;
 		this.requestedProcedureDescription = requestedProcedureDescription;
 		this.stepStartDate = stepStartDate;
 		this.stepStartTime = stepStartTime;
@@ -75,8 +75,8 @@ public class RequestProcedureStep extends BaseOpenmrsData implements java.io.Ser
 		this.requestProcedure = requestProcedure;
 	}
 	
-	public String getScheduledReferringPhysician() {
-		return scheduledReferringPhysician;
+	public String getScheduledPerformingPhysician() {
+		return scheduledPerformingPhysician;
 	}
 	
 	public String getModality() {
@@ -87,8 +87,8 @@ public class RequestProcedureStep extends BaseOpenmrsData implements java.io.Ser
 		this.modality = modality;
 	}
 	
-	public void setScheduledReferringPhysician(String scheduledReferringPhysician) {
-		this.scheduledReferringPhysician = scheduledReferringPhysician;
+	public void setScheduledPerformingPhysician(String scheduledPerformingPhysician) {
+		this.scheduledPerformingPhysician = scheduledPerformingPhysician;
 	}
 	
 	public String getRequestedProcedureDescription() {

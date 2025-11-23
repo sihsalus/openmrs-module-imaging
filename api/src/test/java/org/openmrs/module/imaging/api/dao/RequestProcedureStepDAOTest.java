@@ -51,7 +51,7 @@ public class RequestProcedureStepDAOTest extends BaseModuleContextSensitiveTest 
 		assertEquals("CT", step.getModality());
 		assertEquals("Head Scan", step.getRequestedProcedureDescription());
 		assertEquals("CT Station", step.getStationName());
-		assertEquals("Dr. Physician1", step.getScheduledReferringPhysician());
+		assertEquals("Dr. Physician1", step.getScheduledPerformingPhysician());
 	}
 	
 	@Test
@@ -62,7 +62,7 @@ public class RequestProcedureStepDAOTest extends BaseModuleContextSensitiveTest 
 		newStep.setRequestProcedure(procedure);
 		newStep.setId(4);
 		newStep.setModality("CT");
-		newStep.setScheduledReferringPhysician("Test new step_physician");
+		newStep.setScheduledPerformingPhysician("Test new step_physician");
 		newStep.setRequestedProcedureDescription("CT Scan Chest New");
 		newStep.setAetTitle("testSave_AET2");
 		newStep.setStepStartDate("2025-07-03");
@@ -99,13 +99,13 @@ public class RequestProcedureStepDAOTest extends BaseModuleContextSensitiveTest 
 		RequestProcedureStep step = requestProcedureStepDao.get(1);
 		assertNotNull(step);
 		
-		step.setScheduledReferringPhysician("Physician in station");
+		step.setScheduledPerformingPhysician("Physician in station");
 		step.setPerformedProcedureStepStatus("completed");
 		requestProcedureStepDao.update(step);
 		
 		RequestProcedureStep updtedStep = requestProcedureStepDao.get(1);
 		assertNotNull(updtedStep);
-		assertEquals("Physician in station", updtedStep.getScheduledReferringPhysician());
+		assertEquals("Physician in station", updtedStep.getScheduledPerformingPhysician());
 		assertEquals("completed", updtedStep.getPerformedProcedureStepStatus());
 	}
 }

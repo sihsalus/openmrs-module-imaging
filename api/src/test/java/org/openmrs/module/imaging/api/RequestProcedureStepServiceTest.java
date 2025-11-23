@@ -9,7 +9,6 @@ import org.openmrs.test.BaseModuleContextSensitiveTest;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.Assert.*;
 
@@ -68,7 +67,7 @@ public class RequestProcedureStepServiceTest extends BaseModuleContextSensitiveT
 		step.setStepStartDate("20-07-25");
 		step.setStepStartTime("14:50");
 		step.setStationName("MRI station");
-		step.setScheduledReferringPhysician("test");
+		step.setScheduledPerformingPhysician("test");
 		step.setAetTitle("MRI-AET");
 		step.setRequestedProcedureDescription("test");
 		step.setPerformedProcedureStepStatus("high");

@@ -13,15 +13,18 @@
  */
 package org.openmrs.module.imaging.web.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openmrs.Patient;
 import org.openmrs.api.PatientService;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.imaging.OrthancConfiguration;
+import org.openmrs.module.imaging.api.DicomStudyService;
 import org.openmrs.module.imaging.api.OrthancConfigurationService;
 import org.openmrs.module.imaging.api.RequestProcedureService;
 import org.openmrs.module.imaging.api.RequestProcedureStepService;
+import org.openmrs.module.imaging.api.study.DicomStudy;
 import org.openmrs.module.imaging.api.worklist.RequestProcedure;
 import org.openmrs.module.imaging.api.worklist.RequestProcedureStep;
 import org.openmrs.module.imaging.web.controller.ResponseModel.ProcedureStepResponse;
@@ -39,6 +42,9 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import static org.apache.logging.log4j.core.util.Assert.isNonEmpty;
 
 @Controller("${rootrootArtifactId}.RequestProcedureController")
 @RequestMapping("/rest/" + RestConstants.VERSION_1 + "/worklist")
@@ -125,7 +131,7 @@ public class RequestProcedureController {
 		stepMap.put("ScheduledStationAETitle", step.getAetTitle());
 		stepMap.put("ScheduledProcedureStepStartDate", step.getStepStartDate());
 		stepMap.put("ScheduledProcedureStepStartTime", step.getStepStartTime());
-		stepMap.put("ScheduledPerformingPhysicianName", step.getScheduledReferringPhysician());
+		stepMap.put("ScheduledPerformingPhysicianName", step.getScheduledPerformingPhysician());
 		stepMap.put("PerformedProcedureStepStatus", step.getPerformedProcedureStepStatus());
 		stepMap.put("ScheduledProcedureStepDescription", step.getRequestedProcedureDescription());
 		stepMap.put("ScheduledProcedureStepID", step.getId().toString());
@@ -136,48 +142,225 @@ public class RequestProcedureController {
 	}
 	
 	/**
-	 * @param studyInstanceUID The dicom study instance UID
-	 * @param performedProcedureStepID The OpenMRS-generated unique identifier for the part of the
-	 *            procedure that has been performed in this step..
+	 * @param payload The whole study data procedure that has been performed in this step.
 	 */
 	@RequestMapping(value = "/updaterequeststatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	@Transactional
-	public void updateRequestStatus(HttpServletRequest request, HttpServletResponse response,
-	        @RequestParam(value = "studyInstanceUID") String studyInstanceUID,
-	        @RequestParam(value = "performedProcedureStepID") String performedProcedureStepID) throws IOException {
-
-		RequestProcedureService requestProcedureService = Context.getService(RequestProcedureService.class);
+    public ResponseEntity<?> updateRequestStatus(HttpServletRequest request, HttpServletResponse response,
+                                                                @RequestBody StudyUpdatePayload payload) throws IOException {
+        RequestProcedureService requestProcedureService = Context.getService(RequestProcedureService.class);
 		RequestProcedureStepService requestProcedureStepService = Context.getService(RequestProcedureStepService.class);
-		System.out.println("Study instances UID: " + studyInstanceUID);
-		System.out.println("PerformedProcedureStepID: " + performedProcedureStepID);
 
-		// test data
-//		 performedProcedureStepID = "14";
+        System.out.println("All payload:\n" +
+                new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(payload));
 
-		RequestProcedureStep step = requestProcedureStepService.getProcedureStep(Integer.parseInt(performedProcedureStepID));
-		if (step != null && step.getRequestProcedure() != null) {
-			// Update the procedure step status
-			step.setPerformedProcedureStepStatus("completed");
+        log.info("All payload" +  new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(payload));
 
-			// Set the study instance UID created by modality device
-			step.getRequestProcedure().setStudyInstanceUID(studyInstanceUID);
-			requestProcedureStepService.updateProcedureStep(step);
+        // Study-level UID from JSON payload
+        String studyInstanceUID = payload.getStudyInfo().getStudyInstanceUID();
 
-			// Check all procedure step perform status of the request
-			RequestProcedure requestProcedure = step.getRequestProcedure();
-			List<RequestProcedureStep> stepList = requestProcedureStepService.getAllStepByRequestProcedure(requestProcedure);
-			if (!stepList.isEmpty()) {
-				boolean allCompleted = stepList.stream().
-						allMatch(item -> "completed".equalsIgnoreCase(item.getPerformedProcedureStepStatus().trim()));
+        // Process every series sent by Orthanc
+        for (StudyUpdatePayload.SeriesEntry entry: payload.getSeriesList()) {
+            String performedProcedureStepID = entry.getPerformedProcedureStepID();
 
-				System.out.println("All steps of procedure completed: " + allCompleted);
-				if (allCompleted) {
-					requestProcedure.setStatus("completed");
-					requestProcedureService.updateRequestStatus(requestProcedure);
-				}
-			}
-		}
+            System.out.println("Step ID: " + performedProcedureStepID);
+            log.info("Procedure step: " +  performedProcedureStepID);
+
+            if (performedProcedureStepID == null) {
+                continue;
+            }
+
+            // Fetch the step
+            RequestProcedureStep step =
+                    requestProcedureStepService.getProcedureStep(Integer.parseInt(performedProcedureStepID));
+
+            if (step != null && step.getRequestProcedure() != null) {
+                // Update the procedure step status
+                step.setPerformedProcedureStepStatus("completed");
+
+                // Set the study instance UID created by modality device
+                step.getRequestProcedure().setStudyInstanceUID(studyInstanceUID);
+                requestProcedureStepService.updateProcedureStep(step);
+
+                // Check all procedure step perform status of the request
+                RequestProcedure requestProcedure = step.getRequestProcedure();
+                List<RequestProcedureStep> stepList = requestProcedureStepService.getAllStepByRequestProcedure(requestProcedure);
+
+                if (!stepList.isEmpty()) {
+                    boolean allCompleted = stepList.stream()
+                            .allMatch(s -> "completed".equalsIgnoreCase(s.getPerformedProcedureStepStatus().trim()));
+                    System.out.println("All steps of procedure completed: " + allCompleted);
+                    log.info("All steps of procedure completed: " +  allCompleted);
+
+                    if (allCompleted) {
+                        requestProcedure.setStatus("completed");
+                        requestProcedureService.updateRequestStatus(requestProcedure);
+
+                        // compare metadata
+                        ComparisonResult result = compareWorklistStudyData(requestProcedure, stepList, payload);
+                        assignWorklistStudy(requestProcedure, payload, true);
+                        return ResponseEntity.ok(result);
+                    }
+                } else {
+                    return ResponseEntity.ok("Steps updated, but not all completed");
+                }
+            } else {
+                return ResponseEntity.ok("No valid procedure step IDs found in payload");
+            }
+        }
+        return ResponseEntity.ok("No series data found in payload");
+    }
+	
+	private void assignWorklistStudy(RequestProcedure requestProcedure, StudyUpdatePayload payload, boolean isAssign)
+	        throws IOException {
+		DicomStudyService dicomStudyService = Context.getService(DicomStudyService.class);
+		Patient patient = requestProcedure.getMrsPatient();
+		OrthancConfiguration config = requestProcedure.getOrthancConfiguration();
+
+		dicomStudyService.fetchNewChangedStudiesByConfiguration(config);
+		List<DicomStudy> studies = dicomStudyService.getStudiesByConfiguration(config);
+
+        String studyUID = payload.getStudyInfo().getStudyInstanceUID();
+
+        DicomStudy study = (studies == null || studies.isEmpty())
+                ? null
+                : studies.stream()
+                .filter(s -> studyUID.equals(s.getStudyInstanceUID()))
+                .findFirst()
+                .orElse(null);
+
+        if (study != null) {
+            if (isAssign) {
+                study.setMrsPatient(patient);
+            } else {
+                study.setMrsPatient(null);
+            }
+        }
 	}
+	
+	private ComparisonResult compareWorklistStudyData (
+            RequestProcedure requestProcedure,
+            List<RequestProcedureStep> stepList,
+            StudyUpdatePayload payload) {
+
+        int score = 0;
+        List<DicomDifference> diffs = new ArrayList<>();
+
+        if (requestProcedure == null || payload == null || payload.getStudyInfo() == null) {
+            return new ComparisonResult(score, diffs); // Nothing to compare
+        }
+
+        // Accession number
+        String accessionDB = requestProcedure.getAccessionNumber();
+        String accessionPayload = payload.getStudyInfo().getAccessionNumber();
+        if (isNonEmpty(accessionDB) && accessionDB.equalsIgnoreCase(accessionPayload)) {
+            score += 20;
+        } else {
+            diffs.add(new DicomDifference("AccessionNumber", accessionDB, accessionPayload));
+        }
+
+        // referringPhysicianName
+        String requestingPhysicianDB = requestProcedure.getRequestingPhysician();
+        String requestingPhysicianPayload = payload.getStudyInfo().getReferringPhysicianName();
+        if (isNonEmpty(requestingPhysicianDB)&& requestingPhysicianPayload != null &&
+                requestingPhysicianDB.toLowerCase().contains(requestingPhysicianPayload.toLowerCase())) {
+            score += 10;
+        } else {
+            diffs.add(new DicomDifference("RequestingPhysician", requestingPhysicianDB, requestingPhysicianPayload));
+        }
+
+        //2. Step-level comparison
+        if (stepList != null && !stepList.isEmpty()) {
+            int stepScoreTotal = 0;
+
+            for (RequestProcedureStep st : stepList) {
+                StudyUpdatePayload.SeriesEntry entry = payload.getSeriesList().stream()
+                        .filter(s -> st.getId().toString().equalsIgnoreCase(s.getPerformedProcedureStepID()))
+                        .findFirst()
+                        .orElse(null);
+                if (entry == null) { continue; }
+
+                int stepScore = 0;
+
+                // Patient Name
+                String givenNameDB = st.getRequestProcedure().getMrsPatient().getGivenName();
+                String familyNameDB = st.getRequestProcedure().getMrsPatient().getFamilyName();
+                String patientNameDB = givenNameDB + " " + familyNameDB;
+                String patientNamePayload = payload.getSeriesList().get(0).getInstanceInfo().getPatientName();
+                if (isNonEmpty(patientNamePayload) && isNonEmpty(familyNameDB)&&
+                        patientNamePayload.equalsIgnoreCase(givenNameDB)) {
+                    score += 25;
+                } else {
+                    diffs.add(new DicomDifference("PatientName",  patientNameDB, patientNamePayload));
+                }
+
+                // Patient ID
+                String patientIdDB = st.getRequestProcedure().getMrsPatient().getPatientId() != null ?
+                        st.getRequestProcedure().getMrsPatient().getPatientId().toString() : null;
+                String patientIdPayload = entry.getInstanceInfo() != null ? entry.getInstanceInfo().getPatientID() : null;
+                if (isNonEmpty(patientIdPayload) && patientIdPayload.equalsIgnoreCase(patientIdDB)){
+                    score += 10;
+                } else {
+                    diffs.add(new DicomDifference("PatientID",  patientIdDB, patientIdPayload));
+                }
+
+                // Patient birthdate
+                String patientBirthDateDB = st.getRequestProcedure().getMrsPatient().getBirthdate() != null ?
+                        st.getRequestProcedure().getMrsPatient().getBirthdate().toString() : null;
+                String patientBirthDatePayload = entry.getInstanceInfo() != null ? entry.getInstanceInfo().getPatientBirthDate() : null;
+                if (isNonEmpty(patientBirthDatePayload) && patientBirthDatePayload.equalsIgnoreCase(patientBirthDateDB)) {
+                    stepScore += 10;
+                } else {
+                    diffs.add(new DicomDifference("PatientBirthDate", patientBirthDateDB, patientBirthDatePayload));
+                }
+
+                // Modality
+                String modalityDB = st.getModality();
+                String modalityPayload = entry.getSeriesInfo() != null ? entry.getSeriesInfo().getModality() : null;
+                if (isNonEmpty(modalityDB) && modalityDB.equalsIgnoreCase(modalityPayload)) {
+                    stepScore += 25;
+                } else {
+                    diffs.add(new DicomDifference("Modality", modalityDB, modalityPayload, st.getId().toString()));
+                }
+
+                // Scheduled performing physician
+                String scheduledPhysicianDB = st.getScheduledPerformingPhysician();
+                String scheduledPhysicianPayload = entry.getInstanceInfo() != null ? entry.getInstanceInfo().getScheduledPerformingPhysician() : null;
+                if (isNonEmpty(scheduledPhysicianDB) && isNonEmpty(scheduledPhysicianPayload) &&
+                        scheduledPhysicianPayload.toLowerCase().contains(scheduledPhysicianDB.toLowerCase())) {
+                    stepScore += 10;
+                } else {
+                    diffs.add(new DicomDifference("ScheduledPerformingPhysician", scheduledPhysicianDB, scheduledPhysicianPayload, st.getId().toString()));
+                }
+
+                // Requested procedure description
+                String requestedProcedureDB = st.getRequestedProcedureDescription();
+                String performedProcedurePayload = entry.getInstanceInfo() != null ? entry.getInstanceInfo().getPerformedProcedureStepDescription() : null;
+                if (isNonEmpty(requestedProcedureDB) && isNonEmpty(performedProcedurePayload) &&
+                        performedProcedurePayload.toLowerCase().contains(requestedProcedureDB.toLowerCase())) {
+                    stepScore += 10;
+                } else {
+                    diffs.add(new DicomDifference("PerformedProcedureStepDescription", requestedProcedureDB, performedProcedurePayload, st.getId().toString()));
+                }
+
+                // Station Name
+                String stationDB = st.getStationName();
+                String stationPayload = entry.getSeriesInfo() != null ? entry.getSeriesInfo().getStationName() : null;
+                if (isNonEmpty(stationDB) && stationDB.equalsIgnoreCase(stationPayload)) {
+                    stepScore += 10;
+                } else {
+                    diffs.add(new DicomDifference("StationName", stationDB, stationPayload, st.getId().toString()));
+                }
+
+                stepScoreTotal += stepScore;
+            }
+            // Normalize step store: Average across steps:
+            int maxStepScore = 70;
+            int possibleStepsPoints = stepList.size() * 70;
+            score += (int)(((double) stepScoreTotal / (double) possibleStepsPoints) * maxStepScore);
+        }
+        return new ComparisonResult(score, diffs);
+    }
 	
 	/**
 	 * @param requestPostData The data for the new request procedure
@@ -233,7 +416,7 @@ public class RequestProcedureController {
 		newStep.setRequestProcedure(requestProcedure);
 		newStep.setModality((String) stepPostData.get("modality"));
 		newStep.setAetTitle((String) stepPostData.get("aetTitle"));
-		newStep.setScheduledReferringPhysician((String) stepPostData.get("scheduledReferringPhysician"));
+		newStep.setScheduledPerformingPhysician((String) stepPostData.get("scheduledPerformingPhysician"));
 		newStep.setRequestedProcedureDescription((String) stepPostData.get("requestedProcedureDescription"));
 		newStep.setPerformedProcedureStepStatus("scheduled");
 		newStep.setStepStartDate((String) stepPostData.get("stepStartDate"));

@@ -284,7 +284,7 @@ class OpenMRSClient:
             "requestId": request_id,
             "modality": modality,
             "aetTitle": aet_title,
-            "scheduledReferringPhysician": referring_physician,
+            "scheduledPerformingPhysician": referring_physician,
             "requestedProcedureDescription": requested_step_description,
             "stepStartDate": now.strftime("%Y-%m-%d"),
             "stepStartTime": now.strftime("%H:%M:%S"),

@@ -75,7 +75,7 @@
                                  referencedColumnNames="id"/>
     </changeSet>
 
-    <changeSet id="300" author="weisadre">
+    <changeSet id="309" author="weisadre">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="${project.parent.artifactId}_RequestProcedure"/>
@@ -120,7 +120,7 @@
                                  referencedTableName="imaging_OrthancConfiguration"
                                  referencedColumnNames="id"/>
     </changeSet>
-    <changeSet id="301" author="weisadre">
+    <changeSet id="310" author="weisadre">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="${project.parent.artifactId}_RequestProcedureStep"/>
@@ -141,7 +141,7 @@
             <column name="aetTitle" type="varchar(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="scheduledReferringPhysician" type="varchar(255)">
+            <column name="scheduledPerformingPhysician" type="varchar(255)">
                 <constraints nullable="false"/>
             </column>
             <column name="requestedProcedureDescription" type="varchar(255)">

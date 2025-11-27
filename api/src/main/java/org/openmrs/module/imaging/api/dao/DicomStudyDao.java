@@ -77,4 +77,9 @@ public class DicomStudyDao {
 	public void remove(DicomStudy study) {
 		getSession().delete(study);
 	}
+	
+	public void updateStudyMatchingStatus(DicomStudy study, int newMatchingStatus) {
+		study.setMatching(newMatchingStatus);
+		getSession().update(study);
+	}
 }

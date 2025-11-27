@@ -4,22 +4,22 @@ public class DicomDifference {
 	
 	private String tag;
 	
-	private String dbValue;
+	private String fromOpenmrs;
 	
-	private String payloadValue;
+	private String fromPacs;
 	
 	private String stepId;
 	
-	public DicomDifference(String tag, String dbValue, String payloadValue) {
+	public DicomDifference(String tag, String fromOpenmrs, String fromPacs) {
 		this.tag = tag;
-		this.dbValue = dbValue;
-		this.payloadValue = payloadValue;
+		this.fromOpenmrs = fromOpenmrs;
+		this.fromPacs = fromPacs;
 	}
 	
-	public DicomDifference(String tag, String dbValue, String payloadValue, String stepId) {
+	public DicomDifference(String tag, String fromOpenmrs, String fromPacs, String stepId) {
 		this.tag = tag;
-		this.dbValue = dbValue;
-		this.payloadValue = payloadValue;
+		this.fromOpenmrs = fromOpenmrs;
+		this.fromPacs = fromPacs;
 		this.stepId = stepId;
 	}
 	
@@ -31,20 +31,20 @@ public class DicomDifference {
 		this.tag = tag;
 	}
 	
-	public String getDbValue() {
-		return dbValue;
+	public String getFromOpenmrs() {
+		return fromOpenmrs;
 	}
 	
-	public void setDbValue(String dbValue) {
-		this.dbValue = dbValue;
+	public void setFromOpenmrs(String fromOpenmrs) {
+		this.fromOpenmrs = fromOpenmrs;
 	}
 	
-	public String getPayloadValue() {
-		return payloadValue;
+	public String getFromPacs() {
+		return fromPacs;
 	}
 	
-	public void setPayloadValue(String payloadValue) {
-		this.payloadValue = payloadValue;
+	public void setFromPacs(String fromPacs) {
+		this.fromPacs = fromPacs;
 	}
 	
 	public String getStepId() {

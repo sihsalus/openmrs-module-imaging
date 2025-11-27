@@ -35,8 +35,7 @@
             <column name="lastChangedIndex" type="int" />
         </createTable>
     </changeSet>
-
-    <changeSet id="276" author="weisadre">
+    <changeSet id="328" author="weisadre">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="${project.parent.artifactId}_DicomStudy"/>
@@ -50,6 +49,12 @@
             </column>
             <column name="studyInstanceUID" type="varchar(255)">
                 <constraints nullable="false"/>
+            </column>
+            <column name="matching" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="comparisonResult" type="varchar(2000)">
+                <constraints nullable="true"/>
             </column>
             <column name="orthancStudyUID" type="varchar(255)">
                 <constraints nullable="false"/>

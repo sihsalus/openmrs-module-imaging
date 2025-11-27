@@ -235,6 +235,25 @@ public class DicomStudyController {
         return new ResponseEntity<>("", HttpStatus.OK);
     }
 	
+	@RequestMapping(value="/updatestudymatchingstatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Transactional
+    public ResponseEntity<Object> updateStudyMatchingStatus(
+            @RequestParam(value="studyId") int studyId,
+            @RequestParam(value="matching") int matching,
+            HttpServletRequest request,
+            HttpServletResponse response){
+
+        DicomStudyService dicomStudyService = Context.getService(DicomStudyService.class);
+        DicomStudy study = dicomStudyService.getDicomStudy(studyId);
+
+        if (studyId <= 0) {
+            return new ResponseEntity<>("studyId, patientUUID or matching is missing", HttpStatus.BAD_REQUEST);
+        } else {
+            dicomStudyService.updateMatching(study, matching);
+        }
+        return new ResponseEntity<>("", HttpStatus.OK);
+    }
+	
 	/**
 	 * @param studyId The dicom study ID
 	 * @param deleteOption Options: (from openmrs, from openmrs and orthanc)

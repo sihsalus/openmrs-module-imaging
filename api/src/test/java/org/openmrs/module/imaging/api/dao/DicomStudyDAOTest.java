@@ -88,6 +88,8 @@ public class DicomStudyDAOTest extends BaseModuleContextSensitiveTest {
 		newStudy.setStudyInstanceUID("studyInstanceUID777");
 		newStudy.setOrthancStudyUID("orthancUID777");
 		newStudy.setStudyDescription("Test_New_Study");
+		newStudy.setMatching(1);
+		newStudy.setComparisonResult("NoComparisonData");
 		newStudy.setOrthancConfiguration(config);
 		
 		dicomStudyDao.save(newStudy);
@@ -96,6 +98,8 @@ public class DicomStudyDAOTest extends BaseModuleContextSensitiveTest {
 		assertNotNull(retrieved);
 		assertEquals("Test_New_Study", retrieved.getStudyDescription());
 		assertEquals("orthancUID777", retrieved.getOrthancStudyUID());
+		assertEquals(1, retrieved.getMatching());
+		assertEquals("NoComparisonData", retrieved.getComparisonResult());
 		
 		List<DicomStudy> allStudies = dicomStudyDao.getAll();
 		assertEquals(3, allStudies.size());

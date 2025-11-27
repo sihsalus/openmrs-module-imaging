@@ -83,6 +83,8 @@ public interface DicomStudyService extends OpenmrsService {
 	
 	void setHttpClient(OrthancHttpClient client);
 	
+	void updateMatching(DicomStudy study, int newMatchingStatus);
+	
 	class PreviewResult {
 		
 		public byte[] data;

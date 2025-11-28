@@ -67,7 +67,7 @@ public class StudyUpdatePayload {
 		
 		private InstanceInfo instanceInfo;
 		
-		private String performedProcedureStepID;
+		private String scheduledProcedureStepID;
 		
 		public SeriesInfo getSeriesInfo() {
 			return seriesInfo;
@@ -81,12 +81,12 @@ public class StudyUpdatePayload {
 			this.instanceInfo = instanceInfo;
 		}
 		
-		public String getPerformedProcedureStepID() {
-			return performedProcedureStepID;
+		public String getScheduledProcedureStepID() {
+			return scheduledProcedureStepID;
 		}
 		
-		public void setPerformedProcedureStepID(String performedProcedureStepID) {
-			this.performedProcedureStepID = performedProcedureStepID;
+		public void setScheduledProcedureStepID(String scheduledProcedureStepID) {
+			this.scheduledProcedureStepID = scheduledProcedureStepID;
 		}
 	}
 	
@@ -137,7 +137,7 @@ public class StudyUpdatePayload {
 		
 		private String patientName;
 		
-		private String performedProcedureStepID;
+		private String scheduledProcedureStepID;
 		
 		private String studyInstanceUID;
 		
@@ -165,12 +165,12 @@ public class StudyUpdatePayload {
 			return patientID;
 		}
 		
-		public String getPerformedProcedureStepID() {
-			return performedProcedureStepID;
+		public String getScheduledProcedureStepID() {
+			return scheduledProcedureStepID;
 		}
 		
-		public void setPerformedProcedureStepID(String performedProcedureStepID) {
-			this.performedProcedureStepID = performedProcedureStepID;
+		public void setScheduledProcedureStepID(String scheduledProcedureStepID) {
+			this.scheduledProcedureStepID = scheduledProcedureStepID;
 		}
 		
 		public String getStudyInstanceUID() {

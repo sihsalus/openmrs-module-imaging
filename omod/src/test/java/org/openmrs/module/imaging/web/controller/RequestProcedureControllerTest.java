@@ -67,7 +67,7 @@ public class RequestProcedureControllerTest extends BaseWebControllerTest {
 
 		MockHttpServletRequest request = newPostRequest("/rest/v1/worklist/updaterequeststatus?studyInstanceUID="
 				+ requestProcedure.getStudyInstanceUID()
-				+ "&performedProcedureStepID="+ step.getId().toString(), jsonRequestContent);
+				+ "&scheduledProcedureStepID="+ step.getId().toString(), jsonRequestContent);
 
 		MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -102,10 +102,10 @@ public class RequestProcedureControllerTest extends BaseWebControllerTest {
 		payload.setStudyInfo(info);
 
 		StudyUpdatePayload.SeriesEntry entry = new StudyUpdatePayload.SeriesEntry();
-		entry.setPerformedProcedureStepID(step.getId().toString());
+		entry.setScheduledProcedureStepID(step.getId().toString());
 
         StudyUpdatePayload.InstanceInfo instance = new StudyUpdatePayload.InstanceInfo();
-        instance.setPerformedProcedureStepID(step.getId().toString());
+        instance.setScheduledProcedureStepID(step.getId().toString());
         instance.setStudyInstanceUID(requestProcedure.getStudyInstanceUID());
 
         List<StudyUpdatePayload.SeriesEntry> list = new ArrayList<>();

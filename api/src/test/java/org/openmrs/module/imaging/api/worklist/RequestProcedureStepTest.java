@@ -36,7 +36,7 @@ public class RequestProcedureStepTest {
 	@Test
 	public void testAllArgsConstructor() {
 		RequestProcedure procedure = new RequestProcedure();
-		RequestProcedureStep step = new RequestProcedureStep(procedure, "MRI", "Dr. Cuddy", "MRI Brain", "AET456",
+		RequestProcedureStep step = new RequestProcedureStep(0, procedure, "MRI", "Dr. Cuddy", "MRI Brain", "AET456",
 		        "2025-07-04", "10:00", "in progress", "Station B", "Room 2");
 		
 		assertEquals(procedure, step.getRequestProcedure());

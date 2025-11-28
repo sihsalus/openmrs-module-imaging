@@ -19,6 +19,8 @@ public class ProcedureStepResponse {
 	
 	private Integer id;
 	
+	private Integer stepNumber;
+	
 	private Integer requestProcedureId;
 	
 	private String modality;
@@ -45,7 +47,7 @@ public class ProcedureStepResponse {
 	 */
 	public static ProcedureStepResponse createResponse(RequestProcedureStep step) {
 		ProcedureStepResponse response = new ProcedureStepResponse();
-		
+		response.setStepNumber(step.getStepNumber());
 		response.setId(step.getId());
 		response.setRequestProcedureId(step.getRequestProcedure().getId());
 		response.setModality(step.getModality());
@@ -62,6 +64,14 @@ public class ProcedureStepResponse {
 	
 	public Integer getId() {
 		return id;
+	}
+	
+	public void setStepNumber(Integer stepNumber) {
+		this.stepNumber = stepNumber;
+	}
+	
+	public Integer getStepNumber() {
+		return stepNumber;
 	}
 	
 	public void setId(Integer id) {

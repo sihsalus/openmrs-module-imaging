@@ -11,7 +11,7 @@ import uuid
 Accession_Number = "ACC12345"
 Study_Instance_UID = pydicom.uid.generate_uid()
 Request_Description = f"Test request {uuid.uuid4()}"
-Performed_Procedure_Step_ID = "1"
+Scheduled_Procedure_Step_ID = "1"
 Configuration_ID=1
 Requesting_Physician = "Dr. Tester"
 Study_Description = "Test study"

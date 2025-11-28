@@ -161,18 +161,18 @@ public class RequestProcedureController {
 
         // Process every series sent by Orthanc
         for (StudyUpdatePayload.SeriesEntry entry: payload.getSeriesList()) {
-            String performedProcedureStepID = entry.getPerformedProcedureStepID();
+            String scheduledProcedureStepID = entry.getScheduledProcedureStepID();
 
-            System.out.println("Step ID: " + performedProcedureStepID);
-            log.info("Procedure step: " +  performedProcedureStepID);
+            System.out.println("Step ID: " + scheduledProcedureStepID);
+            log.info("Procedure step: " +  scheduledProcedureStepID);
 
-            if (performedProcedureStepID == null) {
+            if (scheduledProcedureStepID == null) {
                 continue;
             }
 
             // Fetch the step
             RequestProcedureStep step =
-                    requestProcedureStepService.getProcedureStep(Integer.parseInt(performedProcedureStepID));
+                    requestProcedureStepService.getProcedureStep(Integer.parseInt(scheduledProcedureStepID));
 
             if (step != null && step.getRequestProcedure() != null) {
                 // Update the procedure step status
@@ -289,7 +289,7 @@ public class RequestProcedureController {
 
             for (RequestProcedureStep step : stepList) {
                 StudyUpdatePayload.SeriesEntry entry = payload.getSeriesList().stream()
-                        .filter(s -> step.getId().toString().equalsIgnoreCase(s.getPerformedProcedureStepID()))
+                        .filter(s -> step.getId().toString().equalsIgnoreCase(s.getScheduledProcedureStepID()))
                         .findFirst()
                         .orElse(null);
                 if (entry == null) { continue; }

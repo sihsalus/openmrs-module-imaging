@@ -21,6 +21,8 @@ public class RequestProcedureStep extends BaseOpenmrsData implements java.io.Ser
 	
 	private Integer id;
 	
+	private Integer stepNumber;
+	
 	private RequestProcedure requestProcedure;
 	
 	private String modality;
@@ -44,9 +46,10 @@ public class RequestProcedureStep extends BaseOpenmrsData implements java.io.Ser
 	public RequestProcedureStep() {
 	}
 	
-	public RequestProcedureStep(RequestProcedure requestProcedure, String modality, String scheduledPerformingPhysician,
-	    String requestedProcedureDescription, String aetTitle, String stepStartDate, String stepStartTime,
-	    String performedProcedureStepStatus, String stationName, String procedureStepLocation) {
+	public RequestProcedureStep(int stepNumber, RequestProcedure requestProcedure, String modality,
+	    String scheduledPerformingPhysician, String requestedProcedureDescription, String aetTitle, String stepStartDate,
+	    String stepStartTime, String performedProcedureStepStatus, String stationName, String procedureStepLocation) {
+		this.stepNumber = stepNumber;
 		this.requestProcedure = requestProcedure;
 		this.modality = modality;
 		this.aetTitle = aetTitle;
@@ -61,6 +64,14 @@ public class RequestProcedureStep extends BaseOpenmrsData implements java.io.Ser
 	
 	public Integer getId() {
 		return id;
+	}
+	
+	public Integer getStepNumber() {
+		return stepNumber;
+	}
+	
+	public void setStepNumber(Integer stepNumber) {
+		this.stepNumber = stepNumber;
 	}
 	
 	public void setId(Integer id) {

@@ -14,6 +14,7 @@
 package org.openmrs.module.imaging.web.controller;
 
 import java.util.List;
+
 /**
  * Study meta data model created from PACS (Orthanc) for transmission to the frontend
  */

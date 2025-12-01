@@ -261,6 +261,7 @@ public class DicomStudyControllerTest extends BaseWebControllerTest {
 		    response);
 		assertEquals(200, result.getStatusCodeValue());
 		assertEquals(assignedPatient, study.getMrsPatient());
+		assertEquals(0, study.getMatching());
 		assertEquals(assignPatientUuid, study.getMrsPatient().getUuid());
 	}
 	
@@ -276,6 +277,7 @@ public class DicomStudyControllerTest extends BaseWebControllerTest {
 		ResponseEntity<Object> result = controller.assignStudy(study.getId(), patient.getUuid(), false, request, response);
 		assertEquals(200, result.getStatusCodeValue());
 		assertNull(study.getMrsPatient());
+		assertEquals(-1, study.getMatching());
 	}
 	
 	@Test

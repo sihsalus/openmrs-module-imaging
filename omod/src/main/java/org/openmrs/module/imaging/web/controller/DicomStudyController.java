@@ -228,8 +228,10 @@ public class DicomStudyController {
         }
         if (isAssign) {
             study.setMrsPatient(patient);
+            study.setMatching(0);
         } else {
             study.setMrsPatient(null);
+            study.setMatching(-1);
         }
         return new ResponseEntity<>("", HttpStatus.OK);
     }

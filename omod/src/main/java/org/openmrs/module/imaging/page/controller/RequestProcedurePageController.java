@@ -152,7 +152,7 @@ public class RequestProcedurePageController {
 	/**
 	 * @param redirectAttributes The redirect attributes
 	 * @param modality The modality of the study
-	 * @param scheduledReferringPhysician The physician who performs the step
+	 * @param scheduledPerformingPhysician The physician who performs the step
 	 * @param requestedProcedureDescription The description of the request procedure
 	 * @param stepStartDate TThe creation date of the step
 	 * @param stepStartTime The creation time of the steps
@@ -164,7 +164,7 @@ public class RequestProcedurePageController {
 	public String newProcedureStep(RedirectAttributes redirectAttributes,
 	        @RequestParam(value = "requestProcedureId") int requestProcedureId,
 	        @RequestParam(value = "modality") String modality, @RequestParam(value = "aetTitle") String aetTitle,
-	        @RequestParam(value = "scheduledReferringPhysician") String scheduledReferringPhysician,
+	        @RequestParam(value = "scheduledPerformingPhysician") String scheduledPerformingPhysician,
 	        @RequestParam(value = "requestedProcedureDescription") String requestedProcedureDescription,
 	        @RequestParam(value = "stepStartDate") String stepStartDate,
 	        @RequestParam(value = "stepStartTime") String stepStartTime,
@@ -183,7 +183,7 @@ public class RequestProcedurePageController {
 				step.setRequestProcedure(requestProcedure);
 				step.setModality(modality);
 				step.setAetTitle(aetTitle);
-				step.setScheduledReferringPhysician(scheduledReferringPhysician);
+				step.setScheduledPerformingPhysician(scheduledPerformingPhysician);
 				step.setRequestedProcedureDescription(requestedProcedureDescription);
 				step.setStepStartDate(stepStartDate);
 				step.setStepStartTime(stepStartTime);

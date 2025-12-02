@@ -4,13 +4,13 @@
 	<parent>
 		<groupId>org.openmrs.module</groupId>
 		<artifactId>imaging</artifactId>
-		<version>1.1.5-SNAPSHOT</version>
+		<version>1.1.6</version>
 	</parent>
 
 	<artifactId>imaging-api</artifactId>
 	<packaging>jar</packaging>
 	<name>Imaging API</name>
-	<version>1.1.5-SNAPSHOT</version>
+	<version>1.1.6</version>
 	<description>API project for Imaging</description>
 	<dependencies>
 		<dependency>

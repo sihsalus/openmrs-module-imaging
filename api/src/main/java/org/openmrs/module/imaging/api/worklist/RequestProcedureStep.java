@@ -21,13 +21,15 @@ public class RequestProcedureStep extends BaseOpenmrsData implements java.io.Ser
 	
 	private Integer id;
 	
+	private Integer stepNumber;
+	
 	private RequestProcedure requestProcedure;
 	
 	private String modality;
 	
 	private String aetTitle;
 	
-	private String scheduledReferringPhysician;
+	private String scheduledPerformingPhysician;
 	
 	private String requestedProcedureDescription;
 	
@@ -44,13 +46,14 @@ public class RequestProcedureStep extends BaseOpenmrsData implements java.io.Ser
 	public RequestProcedureStep() {
 	}
 	
-	public RequestProcedureStep(RequestProcedure requestProcedure, String modality, String scheduledReferringPhysician,
-	    String requestedProcedureDescription, String aetTitle, String stepStartDate, String stepStartTime,
-	    String performedProcedureStepStatus, String stationName, String procedureStepLocation) {
+	public RequestProcedureStep(int stepNumber, RequestProcedure requestProcedure, String modality,
+	    String scheduledPerformingPhysician, String requestedProcedureDescription, String aetTitle, String stepStartDate,
+	    String stepStartTime, String performedProcedureStepStatus, String stationName, String procedureStepLocation) {
+		this.stepNumber = stepNumber;
 		this.requestProcedure = requestProcedure;
 		this.modality = modality;
 		this.aetTitle = aetTitle;
-		this.scheduledReferringPhysician = scheduledReferringPhysician;
+		this.scheduledPerformingPhysician = scheduledPerformingPhysician;
 		this.requestedProcedureDescription = requestedProcedureDescription;
 		this.stepStartDate = stepStartDate;
 		this.stepStartTime = stepStartTime;
@@ -61,6 +64,14 @@ public class RequestProcedureStep extends BaseOpenmrsData implements java.io.Ser
 	
 	public Integer getId() {
 		return id;
+	}
+	
+	public Integer getStepNumber() {
+		return stepNumber;
+	}
+	
+	public void setStepNumber(Integer stepNumber) {
+		this.stepNumber = stepNumber;
 	}
 	
 	public void setId(Integer id) {
@@ -75,8 +86,8 @@ public class RequestProcedureStep extends BaseOpenmrsData implements java.io.Ser
 		this.requestProcedure = requestProcedure;
 	}
 	
-	public String getScheduledReferringPhysician() {
-		return scheduledReferringPhysician;
+	public String getScheduledPerformingPhysician() {
+		return scheduledPerformingPhysician;
 	}
 	
 	public String getModality() {
@@ -87,8 +98,8 @@ public class RequestProcedureStep extends BaseOpenmrsData implements java.io.Ser
 		this.modality = modality;
 	}
 	
-	public void setScheduledReferringPhysician(String scheduledReferringPhysician) {
-		this.scheduledReferringPhysician = scheduledReferringPhysician;
+	public void setScheduledPerformingPhysician(String scheduledPerformingPhysician) {
+		this.scheduledPerformingPhysician = scheduledPerformingPhysician;
 	}
 	
 	public String getRequestedProcedureDescription() {

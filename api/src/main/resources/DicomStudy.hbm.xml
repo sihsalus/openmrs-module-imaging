@@ -9,6 +9,8 @@
             <generator class="native" />
         </id>
         <property name="studyInstanceUID" type="java.lang.String" column="studyInstanceUID" length="255"/>
+        <property name="matching" type="java.lang.Integer" column="matching" not-null="true"/>
+        <property name="comparisonResult" type="java.lang.String" column="comparisonResult" length="255"/>
         <property name="orthancStudyUID" type="java.lang.String" column="orthancStudyUID" length="255"/>
         <property name="patientName" type="java.lang.String" column="patientName" length="255"/>
         <property name="studyDate" type="java.lang.String" column="studyDate" length="255"/>

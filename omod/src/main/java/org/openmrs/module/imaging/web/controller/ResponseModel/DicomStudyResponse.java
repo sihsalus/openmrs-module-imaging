@@ -26,6 +26,10 @@ public class DicomStudyResponse {
 	
 	private String orthancStudyUID;
 	
+	private Integer matching;
+	
+	private String comparisonResult;
+	
 	private String mrsPatientUuid;
 	
 	private OrthancConfigurationResponse orthancConfiguration;
@@ -42,6 +46,8 @@ public class DicomStudyResponse {
 		DicomStudyResponse response = new DicomStudyResponse();
 		response.setId(study.getId());
 		response.setStudyInstanceUID(study.getStudyInstanceUID());
+		response.setMatching(study.getMatching());
+		response.setComparisonResult(study.getComparisonResult());
 		response.setMrsPatientUuid(study.getMrsPatient() == null ? null : study.getMrsPatient().getUuid());
 		response.setOrthancStudyUID(study.getOrthancStudyUID());
 		response.setPatientName(study.getPatientName());
@@ -78,6 +84,22 @@ public class DicomStudyResponse {
 	
 	public void setStudyInstanceUID(String studyInstanceUID) {
 		this.studyInstanceUID = studyInstanceUID;
+	}
+	
+	public void setMatching(Integer matching) {
+		this.matching = matching;
+	}
+	
+	public Integer getMatching() {
+		return matching;
+	}
+	
+	public void setComparisonResult(String comparisonResult) {
+		this.comparisonResult = comparisonResult;
+	}
+	
+	public String getComparisonResult() {
+		return comparisonResult;
 	}
 	
 	public String getOrthancStudyUID() {

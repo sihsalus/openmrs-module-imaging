@@ -1,3 +1,18 @@
+# This file is part of [Integration of Orthanc with OpenMRS].
+#
+# Integration of Orthanc with OpenMRS is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Integration of Orthanc with OpenMRS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with [Integration of Orthanc with OpenMRS]. If not, see <https://www.gnu.org/licenses/>.
+
 import os
 import sys
 import logging
@@ -11,7 +26,7 @@ import uuid
 Accession_Number = "ACC12345"
 Study_Instance_UID = pydicom.uid.generate_uid()
 Request_Description = f"Test request {uuid.uuid4()}"
-Performed_Procedure_Step_ID = "1"
+Scheduled_Procedure_Step_ID = "1"
 Configuration_ID=1
 Requesting_Physician = "Dr. Tester"
 Study_Description = "Test study"

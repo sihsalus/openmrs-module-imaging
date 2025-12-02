@@ -165,7 +165,7 @@ ${ ui.includeFragment("uicommons", "infoAndErrorMessage")}
                                         </tr>
                                         <tr>
                                           <td>Referring Physician:</td>
-                                          <td>${step.scheduledReferringPhysician}</td>
+                                          <td>${step.scheduledPerformingPhysician}</td>
                                         </tr>
                                         <tr>
                                            <td>Requested Procedure Description:</td>
@@ -242,7 +242,7 @@ ${ ui.includeFragment("uicommons", "infoAndErrorMessage")}
                     </tr>
                     <tr>
                         <td>Referring Physician</td>
-                        <td><input class="rpInput" type="text" name="scheduledReferringPhysician" id="scheduledReferringPhysician" required></td>
+                        <td><input class="rpInput" type="text" name="scheduledPerformingPhysician" id="scheduledPerformingPhysician" required></td>
                     </tr>
                     <tr>
                         <td>Description</td>

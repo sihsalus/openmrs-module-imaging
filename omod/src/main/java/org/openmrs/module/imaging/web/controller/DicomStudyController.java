@@ -8,7 +8,6 @@
  * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
  * License for the specific language governing rights and limitations
  * under the License.
- *
  * Copyright (C) OpenMRS, LLC.  All Rights Reserved.
  */
 package org.openmrs.module.imaging.web.controller;
@@ -166,7 +165,6 @@ public class DicomStudyController {
 	/**
 	 * @param file The DICOM study files that should be uploaded to the Orthanc server."
 	 * @param configurationId The configuration ID
-	 * @throws IOException
 	 */
 	@RequestMapping(value = "/instances", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional
@@ -230,8 +228,29 @@ public class DicomStudyController {
         }
         if (isAssign) {
             study.setMrsPatient(patient);
+            study.setMatching(0);
         } else {
             study.setMrsPatient(null);
+            study.setMatching(-1);
+        }
+        return new ResponseEntity<>("", HttpStatus.OK);
+    }
+	
+	@RequestMapping(value="/updatestudymatchingstatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Transactional
+    public ResponseEntity<Object> updateStudyMatchingStatus(
+            @RequestParam(value="studyId") int studyId,
+            @RequestParam(value="matching") int matching,
+            HttpServletRequest request,
+            HttpServletResponse response){
+
+        DicomStudyService dicomStudyService = Context.getService(DicomStudyService.class);
+        DicomStudy study = dicomStudyService.getDicomStudy(studyId);
+
+        if (studyId <= 0) {
+            return new ResponseEntity<>("studyId, patientUUID or matching is missing", HttpStatus.BAD_REQUEST);
+        } else {
+            dicomStudyService.updateMatching(study, matching);
         }
         return new ResponseEntity<>("", HttpStatus.OK);
     }

@@ -21,7 +21,7 @@
             ID="1"
             studyInstanceUID="studyUID555"
             orthancStudyUID="orthancUID555"
-            matching="0"
+            linkStatus="0"
             comparisonResult='{"score":50,"differences":[{"name":"PatientName","fromOpenMRS":"AA","fromOrthanc":"BB"}]}'
             patientName="UID555_patient"
             studyDate="2025-07-10"

@@ -44,7 +44,7 @@ ${param["message"]?.getAt(0) ?: ""}
                 <th>${ ui.message("imaging.app.url.label")}</th>
                 <th>${ ui.message("imaging.app.proxyUrl.label")}</th>
                 <th>${ ui.message("imaging.app.username.label")}</th>
-                <th style="width: max-content;">${ ui.message("imaging.delete.action") }</th>
+                <th style="width: max-content;">${ ui.message('imaging.delete.action') }</th>
             </tr>
         </thead>
         <tbody>

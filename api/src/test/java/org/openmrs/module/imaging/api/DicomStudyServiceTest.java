@@ -207,7 +207,7 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		DicomStudy savedStudy = dicomStudyDao.getByStudyInstanceUID(config, "testStudyUID123");
 		assertNotNull(savedStudy);
 		assertEquals("OrthanUID123", savedStudy.getOrthancStudyUID());
-		assertEquals(0, savedStudy.getMatching());
+		assertEquals(0, savedStudy.getLinkStatus());
 		assertEquals("TestOrthancPatient", savedStudy.getPatientName());
 		assertEquals("Test new or update study description", savedStudy.getStudyDescription());
 	}
@@ -226,7 +226,7 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		JsonNode studyData = objectMapper.readTree(jsonString);
 		
 		DicomStudy existingStudy = new DicomStudy("studyInstanceUID444", "orthancUID444", 0, 60,
-		        "patientNameDB=AA, patientNamePayload=BB", patient, config, "Test Imaging", "2025-07-11", "14:35:00",
+		        "{\"differences\":[], \"score\": 0}", patient, config, "Test Imaging", "2025-07-11", "14:35:00",
 		        "CT Head without contrast", "F");
 		
 		DicomStudy foundStudy = dicomStudyDao.getByStudyInstanceUID(config, existingStudy.getStudyInstanceUID());
@@ -239,7 +239,7 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		
 		DicomStudy foundUpdateStudy = dicomStudyDao.getByPatient(patient).get(1);
 		assertEquals("orthancUID123", foundUpdateStudy.getOrthancStudyUID());
-		assertEquals(0, foundUpdateStudy.getMatching());
+		assertEquals(0, foundUpdateStudy.getLinkStatus());
 		assertEquals("studyInstanceUID444", foundUpdateStudy.getStudyInstanceUID());
 	}
 	

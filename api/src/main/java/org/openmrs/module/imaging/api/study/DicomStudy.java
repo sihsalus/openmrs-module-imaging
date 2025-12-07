@@ -29,7 +29,7 @@ public class DicomStudy extends BaseOpenmrsData implements java.io.Serializable 
 	
 	private String orthancStudyUID;
 	
-	private Integer matching;
+	private Integer linkStatus;
 	
 	private Integer matchingScore;
 	
@@ -53,12 +53,12 @@ public class DicomStudy extends BaseOpenmrsData implements java.io.Serializable 
 	public DicomStudy() {
 	}
 	
-	public DicomStudy(String studyInstanceUID, String orthancStudyUID, int matching, int matchingScore,
+	public DicomStudy(String studyInstanceUID, String orthancStudyUID, int linkStatus, int matchingScore,
 	    String comparisonResult, Patient patient, OrthancConfiguration config, String patientName, String studyDate,
 	    String studyTime, String studyDescription, String gender) {
 		this.studyInstanceUID = studyInstanceUID;
 		this.orthancStudyUID = orthancStudyUID;
-		this.matching = matching;
+		this.linkStatus = linkStatus;
 		this.matchingScore = matchingScore;
 		this.comparisonResult = comparisonResult;
 		this.mrsPatient = patient;
@@ -89,12 +89,12 @@ public class DicomStudy extends BaseOpenmrsData implements java.io.Serializable 
 		this.studyInstanceUID = studyInstanceUID;
 	}
 	
-	public void setMatching(int matching) {
-		this.matching = matching;
+	public void setLinkStatus(int linkStatus) {
+		this.linkStatus = linkStatus;
 	}
 	
-	public int getMatching() {
-		return matching;
+	public int getLinkStatus() {
+		return linkStatus;
 	}
 	
 	public void setMatchingScore(Integer matchingScore) {

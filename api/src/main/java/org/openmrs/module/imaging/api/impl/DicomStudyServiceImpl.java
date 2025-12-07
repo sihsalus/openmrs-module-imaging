@@ -116,9 +116,8 @@ public class DicomStudyServiceImpl extends BaseOpenmrsService implements DicomSt
 		String studyDescription = Optional.ofNullable(
 		    studyData.path("MainDicomTags").path("StudyDescription").getTextValue()).orElse("");
 		String gender = Optional.ofNullable(studyData.path("PatientMainDicomTags").path("Gender").getTextValue()).orElse("");
-		DicomStudy study = new DicomStudy(studyInstanceUID, orthancStudyUID, 0, 60,
-		        "patientNameDB=AA, patientNamePayload=BB", null, config, patientName, studyDate, studyTime,
-		        studyDescription, gender);
+		DicomStudy study = new DicomStudy(studyInstanceUID, orthancStudyUID, 0, 60, "{\"differences\":[], \"score\": 0}",
+		        null, config, patientName, studyDate, studyTime, studyDescription, gender);
 		
 		DicomStudy existingStudy = dao.getByStudyInstanceUID(config, studyInstanceUID);
 		// new study? -> save new

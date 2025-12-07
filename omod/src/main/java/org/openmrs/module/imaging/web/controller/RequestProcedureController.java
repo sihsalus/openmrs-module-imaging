@@ -154,6 +154,7 @@ public class RequestProcedureController {
 
         System.out.println("All payload:\n" +
                 new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(payload));
+
         log.info("All payload: " + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(payload));
 
         // Study-level UID from JSON payload
@@ -192,15 +193,15 @@ public class RequestProcedureController {
                     System.out.println("All steps of procedure completed: " + allCompleted);
                     log.info("All steps of procedure completed: " +  allCompleted);
 
+                    // compare metadata
+                    ComparisonResult comparisonResult = compareWorklistStudyData(requestProcedure, stepList, payload);
+                    assignRequestProceduredStudyToPatient(requestProcedure, payload, comparisonResult, true);
+
                     if (allCompleted) {
                         requestProcedure.setStatus("completed");
                         requestProcedureService.updateRequestStatus(requestProcedure);
-
-                        // compare metadata
-                        ComparisonResult comparisonResult = compareWorklistStudyData(requestProcedure, stepList, payload);
-                        assignRequestProceduredStudyToPatient(requestProcedure, payload, comparisonResult, true);
-                        return ResponseEntity.ok(comparisonResult);
                     }
+                    return ResponseEntity.ok(comparisonResult);
                 } else {
                     return ResponseEntity.ok("Steps updated, but not all completed");
                 }
@@ -234,9 +235,9 @@ public class RequestProcedureController {
             int score = comparisonResult.getScore();
 
             if (score == 100) {
-                study.setMatching(2);
+                study.setLinkStatus(2);
             } else {
-                study.setMatching(1);
+                study.setLinkStatus(1);
             }
 
             String json = mapper.writeValueAsString(comparisonResult);

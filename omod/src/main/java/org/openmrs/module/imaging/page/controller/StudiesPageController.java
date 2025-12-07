@@ -13,6 +13,9 @@
  */
 package org.openmrs.module.imaging.page.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openmrs.Patient;
@@ -23,7 +26,11 @@ import org.openmrs.module.imaging.OrthancConfiguration;
 import org.openmrs.module.imaging.api.DicomStudyService;
 import org.openmrs.module.imaging.api.OrthancConfigurationService;
 import org.openmrs.module.imaging.api.study.DicomStudy;
+import org.openmrs.module.imaging.web.controller.DicomDifference;
 import org.openmrs.ui.framework.Model;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
@@ -32,7 +39,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 public class StudiesPageController {
@@ -185,4 +195,47 @@ public class StudiesPageController {
 		redirectAttributes.addAttribute("message", message);
 		return "redirect:/imaging/studies.page";
 	}
+	
+	/**
+	 * @param redirectAttributes the redirect attributes
+	 * @param patient the openmrs patient
+	 * @param studyId the study ID
+	 * @param linkStatus the linked status of the study
+	 * @return the redirect url
+	 */
+	@RequestMapping(value = "/module/imaging/autoLinkStudy.form", method = RequestMethod.POST)
+	public String linkStudy(RedirectAttributes redirectAttributes, @RequestParam(value = "patientId") Patient patient,
+	        @RequestParam(value = "studyId") int studyId, int linkStatus) {
+		DicomStudyService dicomStudyService = Context.getService(DicomStudyService.class);
+		DicomStudy study = dicomStudyService.getDicomStudy(studyId);
+		study.setLinkStatus(linkStatus);
+		String message;
+		if (linkStatus == -1) {
+			dicomStudyService.setPatient(dicomStudyService.getDicomStudy(studyId), null);
+			message = "Study has been unlinked to the patient";
+		} else {
+			dicomStudyService.setPatient(dicomStudyService.getDicomStudy(studyId), patient);
+			message = "Study linked to the patient";
+		}
+		
+		redirectAttributes.addAttribute("patientId", patient.getId());
+		redirectAttributes.addAttribute("message", message);
+		return "redirect:/imaging/studies.page";
+	}
+	
+	/**
+	 * @param studyId the study ID
+	 */
+	@RequestMapping(value = "/module/imaging/fetchStudyComparisonResult.form", method = RequestMethod.GET)
+    public ResponseEntity<?> fetchStudyComparisonResult(@RequestParam(value = "studyId") int studyId) throws JsonProcessingException {
+
+        DicomStudyService dicomStudyService = Context.getService(DicomStudyService.class);
+        DicomStudy study = dicomStudyService.getDicomStudy(studyId);
+
+        if (study != null) {
+            return new ResponseEntity<>(study.getComparisonResult(), HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>("", HttpStatus.NOT_FOUND);
+        }
+    }
 }

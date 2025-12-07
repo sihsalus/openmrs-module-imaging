@@ -79,7 +79,7 @@ public class DicomStudyDao {
 	}
 	
 	public void updateStudyMatchingStatus(DicomStudy study, int newMatchingStatus) {
-		study.setMatching(newMatchingStatus);
+		study.setLinkStatus(newMatchingStatus);
 		getSession().update(study);
 	}
 }

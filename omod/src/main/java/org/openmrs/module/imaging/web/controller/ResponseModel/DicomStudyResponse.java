@@ -26,7 +26,7 @@ public class DicomStudyResponse {
 	
 	private String orthancStudyUID;
 	
-	private Integer matching;
+	private Integer linkStatus;
 	
 	private String comparisonResult;
 	
@@ -46,7 +46,7 @@ public class DicomStudyResponse {
 		DicomStudyResponse response = new DicomStudyResponse();
 		response.setId(study.getId());
 		response.setStudyInstanceUID(study.getStudyInstanceUID());
-		response.setMatching(study.getMatching());
+		response.setLinkStatus(study.getLinkStatus());
 		response.setComparisonResult(study.getComparisonResult());
 		response.setMrsPatientUuid(study.getMrsPatient() == null ? null : study.getMrsPatient().getUuid());
 		response.setOrthancStudyUID(study.getOrthancStudyUID());
@@ -86,12 +86,12 @@ public class DicomStudyResponse {
 		this.studyInstanceUID = studyInstanceUID;
 	}
 	
-	public void setMatching(Integer matching) {
-		this.matching = matching;
+	public void setLinkStatus(Integer linkStatus) {
+		this.linkStatus = linkStatus;
 	}
 	
-	public Integer getMatching() {
-		return matching;
+	public Integer getLinkStatus() {
+		return linkStatus;
 	}
 	
 	public void setComparisonResult(String comparisonResult) {

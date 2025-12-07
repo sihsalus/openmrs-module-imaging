@@ -13,7 +13,7 @@
         for a list of supported elements and attributes
     -->
 
-    <changeSet id="275" author="weisadre">
+    <changeSet id="400" author="weisadre">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="${project.parent.artifactId}_OrthancConfiguration"/>
@@ -35,7 +35,8 @@
             <column name="lastChangedIndex" type="int" />
         </createTable>
     </changeSet>
-    <changeSet id="328" author="weisadre">
+
+    <changeSet id="401" author="weisadre">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="${project.parent.artifactId}_DicomStudy"/>
@@ -50,7 +51,7 @@
             <column name="studyInstanceUID" type="varchar(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="matching" type="int">
+            <column name="linkStatus" type="int">
                 <constraints nullable="false"/>
             </column>
             <column name="comparisonResult" type="varchar(2000)">
@@ -80,7 +81,7 @@
                                  referencedColumnNames="id"/>
     </changeSet>
 
-    <changeSet id="309" author="weisadre">
+    <changeSet id="402" author="weisadre">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="${project.parent.artifactId}_RequestProcedure"/>
@@ -125,7 +126,7 @@
                                  referencedTableName="imaging_OrthancConfiguration"
                                  referencedColumnNames="id"/>
     </changeSet>
-    <changeSet id="340" author="weisadre" runOnChange="true">
+    <changeSet id="403" author="weisadre" runOnChange="true">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="${project.parent.artifactId}_RequestProcedureStep"/>

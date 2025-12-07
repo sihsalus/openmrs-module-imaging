@@ -44,6 +44,71 @@ ${param["message"]?.getAt(0) ?: ""}
                                              + "&patientId=" + patient;
     }
 
+    function onStudyAutoLinkingChange(studyId, patientId, value) {
+        value = parseInt(value)
+        if (value === -1) {
+            togglePopupAutoUnlinkingStudy(studyId, patientId, value)
+        } else {
+            togglePopupAutoLinkingStudy(studyId, patientId, value)
+        }
+    }
+
+    function togglePopupAutoUnlinkingStudy(studyId, patientId, linkStatus) {
+        const overlay = document.getElementById('popupOverlayUnlinkingStudy');
+        overlay.classList.toggle('show');
+        if (studyId && patientId) {
+            document.unlinkStudyForm.action = "/${contextPath}/module/imaging/autoLinkStudy.form?patientId="
+                                                + patientId
+                                                + "&studyId=" + studyId
+                                                + "&linkStatus=" + linkStatus
+        }
+    }
+
+    function togglePopupAutoLinkingStudy(studyId, patientId, linkStatus) {
+        const overlay = document.getElementById('popupOverlayLinkingStudy');
+        overlay.classList.toggle('show');
+
+        if (!studyId || !patientId) return;
+
+        const tbody = document.getElementById("comparison-result-tbody");
+        const scoreSpan = document.getElementById("matching-score");
+        if (!tbody || !scoreSpan ) return;
+
+        tbody.innerHTML = "<tr><td colspan='4'>Loading comparison result data...</td></tr>";
+
+        const url = '/${contextPath}/module/imaging/fetchStudyComparisonResult.form?studyId=' + studyId
+
+        fetch(url, { method: 'GET'})
+            .then(response => {
+                 if (!response.ok) throw new Error("HTTP error " + response.status);
+                 return response.json();
+            })
+            .then(data => {
+                scoreSpan.textContent = data.score != null ? data.score + "%" : "N/A";
+                tbody.innerHTML = "";
+
+                if (data.differences && data.differences.length > 0) {
+                     data.differences.forEach(diff => {
+                        const tr = document.createElement("tr");
+                        tr.innerHTML = "<td>" + diff.tag + "</td>" +
+                                        "<td>" + diff.fromOpenmrs + "</td>" +
+                                        "<td>" + diff.fromPacs + "</td>"
+                        tbody.appendChild(tr);
+                     });
+                } else {
+                    tbody.innerHTML = "<tr><td colspan='3'>No comparison result available</td></tr>";
+                }
+            })
+            .catch((error) => {
+                tbody.innerHTML = "<tr><td colspan='3'>Failed to load comparison result: " + error.message + "</td></tr>";
+            });
+
+        document.linkingStudyForm.action = "/${contextPath}/module/imaging/autoLinkStudy.form?patientId="
+                                                + patientId
+                                                + "&studyId=" + studyId
+                                                + "&linkStatus=" + linkStatus
+    }
+
 </script>
 
 <div>
@@ -63,6 +128,7 @@ ${param["message"]?.getAt(0) ?: ""}
             <script src="filter_table.js" defer></script>
             <tr>
                 <th>${ ui.message("imaging.app.studyInstanceUid.label")}</th>
+                <th>${ ui.message('imaging.app.studyLink.label')}</th>
                 <th>${ ui.message("imaging.app.patientName.label")}</th>
                 <th>${ ui.message("imaging.app.date.label")}</th>
                 <th>${ ui.message("imaging.app.description.label")}</th>
@@ -82,6 +148,15 @@ ${param["message"]?.getAt(0) ?: ""}
                 <tr>
                     <td class="uid-td">
                         <a href="${ui.pageLink("imaging", "series", [patientId: patient.id, studyId: study.id])}">${ui.format(study.studyInstanceUID)}</a>
+                    </td>
+                     <td>
+                        <select class="linking-select"
+                            onchange="onStudyAutoLinkingChange('${study.id}', '${patient.id}', this.value)">
+                            <option value="0" ${study.linkStatus == 0 ? 'selected' : ''}>Manual</option>
+                            <option value="1" ${study.linkStatus == 1 ? 'selected' : ''}>Auto. unsure</option>
+                            <option value="2" ${study.linkStatus == 2 ? 'selected' : ''}>Auto. 100%</option>
+                            <option value="-1" ${study.linkStatus == -1 ? 'selected' : ''}>Unlink</option>
+                        </select>
                     </td>
                     <td>${ui.format(study.patientName)}</td>
                     <td>${ui.format(study.studyDate)}</td>
@@ -171,6 +246,46 @@ ${param["message"]?.getAt(0) ?: ""}
     </div>
 </div>
 
+<div id="popupOverlayUnlinkingStudy" class="overlay-container">
+    <div class="popup-box" style="width: 65%">
+        <h2>Unlink image study</h2>
+        <form name="unlinkStudyForm" class="form-container" method='POST'>
+            <h2 id="unlinkStudyMessage">${ ui.message("imaging.unlinkStudy.message") }</h2>
+            <div class="popup-box-btn" style="margin-top: 40px;">
+                <button class="btn-submit" type="submit">Submit</button>
+                <button class="btn-close-popup" type="button" onclick="togglePopupAutoUnlinkingStudy()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="popupOverlayLinkingStudy" class="overlay-container">
+    <div class="popup-box" style="width: 65%">
+        <h2>Unlink image study</h2>
+        <form name="linkingStudyForm" class="form-container" method='POST'>
+            <h3>Calculated matching score:<span id="matching-score">xx%</span></h3>
+            <h3 style="margin-top: 10px; margin-bottom: 10px;">Comparison result:</h3>
+            <table class="table comparisonTable no-filter">
+                <thead>
+                    <tr>
+                        <th>Tag name</th>
+                        <th>From OpenMRS</th>
+                        <th>From Orthanc</th>
+                    </tr>
+                </thead>
+                <tbody id="comparison-result-tbody"
+                    <tr>
+                        <td colspan="3">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="popup-box-btn" style="margin-top: 40px;">
+                <button class="btn-submit" type="submit">Submit</button>
+                <button class="btn-close-popup" type="button" onclick="togglePopupAutoLinkingStudy()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 
 

@@ -27,9 +27,8 @@ public class DicomStudyTest {
 		Patient mockPatient = new Patient();
 		OrthancConfiguration mockConfig = new OrthancConfiguration();
 		
-		DicomStudy dicomStudy = new DicomStudy("studyUID123", "orthancUID456", 0, 60,
-		        "patientNameDB=AA, patientNamePayload=BB", mockPatient, mockConfig, "John Doe", "20250601", "122600.979000",
-		        "Chest X-Ray", "M");
+		DicomStudy dicomStudy = new DicomStudy("studyUID123", "orthancUID456", 0, 60, "{\"differences\":[], \"score\": 0}",
+		        mockPatient, mockConfig, "John Doe", "20250601", "122600.979000", "Chest X-Ray", "M");
 		
 		assertEquals("studyUID123", dicomStudy.getStudyInstanceUID());
 		assertEquals("orthancUID456", dicomStudy.getOrthancStudyUID());

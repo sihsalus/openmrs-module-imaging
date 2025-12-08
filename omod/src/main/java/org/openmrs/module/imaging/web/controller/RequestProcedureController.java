@@ -152,8 +152,8 @@ public class RequestProcedureController {
         RequestProcedureService requestProcedureService = Context.getService(RequestProcedureService.class);
 		RequestProcedureStepService requestProcedureStepService = Context.getService(RequestProcedureStepService.class);
 
-        System.out.println("All payload:\n" +
-                new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(payload));
+//        System.out.println("All payload:\n" +
+//                new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(payload));
 
         log.info("All payload: " + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(payload));
 
@@ -164,7 +164,6 @@ public class RequestProcedureController {
         for (StudyUpdatePayload.SeriesEntry entry: payload.getSeriesList()) {
             String scheduledProcedureStepID = entry.getScheduledProcedureStepID();
 
-            System.out.println("Step ID: " + scheduledProcedureStepID);
             log.info("Procedure step: " +  scheduledProcedureStepID);
 
             if (scheduledProcedureStepID == null) {
@@ -190,7 +189,6 @@ public class RequestProcedureController {
                 if (!stepList.isEmpty()) {
                     boolean allCompleted = stepList.stream()
                             .allMatch(s -> "completed".equalsIgnoreCase(s.getPerformedProcedureStepStatus().trim()));
-                    System.out.println("All steps of procedure completed: " + allCompleted);
                     log.info("All steps of procedure completed: " +  allCompleted);
 
                     // compare metadata

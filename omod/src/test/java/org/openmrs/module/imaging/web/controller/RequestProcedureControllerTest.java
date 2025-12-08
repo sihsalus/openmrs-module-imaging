@@ -130,7 +130,7 @@ public class RequestProcedureControllerTest extends BaseWebControllerTest {
 	//        }
 	//    }
 	//
-
+	
 	private static StudyUpdatePayload getStudyUpdatePayload(RequestProcedure requestProcedure,
 	        RequestProcedureStep step) {
 		StudyUpdatePayload payload = new StudyUpdatePayload();

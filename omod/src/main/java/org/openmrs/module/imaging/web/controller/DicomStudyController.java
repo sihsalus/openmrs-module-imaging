@@ -248,7 +248,7 @@ public class DicomStudyController {
         DicomStudy study = dicomStudyService.getDicomStudy(studyId);
 
         if (studyId <= 0) {
-            return new ResponseEntity<>("studyId, patientUUID or linkStatus is missing", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>("studyId is missing", HttpStatus.BAD_REQUEST);
         } else {
             dicomStudyService.updateMatching(study, linkStatus);
         }

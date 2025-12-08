@@ -187,15 +187,19 @@ public class RequestProcedureController {
                 List<RequestProcedureStep> stepList = requestProcedureStepService.getAllStepByRequestProcedure(requestProcedure);
 
                 if (!stepList.isEmpty()) {
-                    boolean allCompleted = stepList.stream()
-                            .allMatch(s -> "completed".equalsIgnoreCase(s.getPerformedProcedureStepStatus().trim()));
-                    log.info("All steps of procedure completed: " +  allCompleted);
+                    boolean allCompletedOrRejected = stepList.stream()
+                            .allMatch(s -> {
+                                String status = s.getPerformedProcedureStepStatus().trim();
+                                return "completed".equalsIgnoreCase(status)
+                                        || "rejected".equalsIgnoreCase(status);
+                            });
+                    log.info("All steps of procedure completed: " +  allCompletedOrRejected);
 
                     // compare metadata
                     ComparisonResult comparisonResult = compareWorklistStudyData(requestProcedure, stepList, payload);
                     assignRequestProceduredStudyToPatient(requestProcedure, payload, comparisonResult);
 
-                    if (allCompleted) {
+                    if (allCompletedOrRejected) {
                         requestProcedure.setStatus("completed");
                         requestProcedureService.updateRequestStatus(requestProcedure);
                     }
@@ -390,7 +394,24 @@ public class RequestProcedureController {
         }
         return new ComparisonResult(score, diffs);
     }
+	
+	@RequestMapping(value = "/updateprocedurestepstatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Transactional
+    public ResponseEntity<?> updateProcedureStepStatus(
+            @RequestParam(value="stepId") int stepId,
+            @RequestParam(value="status") String status,
+            HttpServletRequest request, HttpServletResponse response ) {
 
+        RequestProcedureStepService requestProcedureStepService = Context.getService(RequestProcedureStepService.class);
+        RequestProcedureStep step = requestProcedureStepService.getProcedureStep(stepId);
+        if (stepId <= 0) {
+            return new ResponseEntity<>("step ID is missing", HttpStatus.BAD_REQUEST);
+        } else {
+            step.setPerformedProcedureStepStatus(status);
+        }
+        return new ResponseEntity<>("", HttpStatus.OK);
+    }
+	
 	/**
 	 * @param requestPostData The data for the new request procedure
 	 * @return The response entity resulting from the request processing

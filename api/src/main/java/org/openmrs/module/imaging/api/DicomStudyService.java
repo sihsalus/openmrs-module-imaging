@@ -67,6 +67,9 @@ public interface DicomStudyService extends OpenmrsService {
 	
 	void fetchNewChangedStudiesByConfiguration(OrthancConfiguration orthancConfiguration) throws IOException;
 	
+	void fetchNewChangedStudiesByConfigurationAndStudyUIDs(OrthancConfiguration config, List<String> orthancStudyIds)
+	        throws IOException;
+	
 	int uploadFile(OrthancConfiguration config, InputStream is) throws IOException;
 	
 	void setPatient(DicomStudy study, Patient patient);

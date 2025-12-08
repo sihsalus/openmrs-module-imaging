@@ -173,12 +173,24 @@ public class StudyUpdatePayload {
 			return patientBirthDate;
 		}
 		
+		public void setPatientBirthDate(String patientBirthDate) {
+			this.patientBirthDate = patientBirthDate;
+		}
+		
 		public String getPatientName() {
 			return patientName;
 		}
 		
+		public void setPatientName(String patientName) {
+			this.patientName = patientName;
+		}
+		
 		public String getPatientID() {
 			return patientID;
+		}
+		
+		public void setPatientID(String patientID) {
+			this.patientID = patientID;
 		}
 		
 		public String getScheduledProcedureStepID() {
@@ -205,8 +217,20 @@ public class StudyUpdatePayload {
 			return scheduledPerformingPhysician;
 		}
 		
+		public void setScheduledPerformingPhysician(String scheduledPerformingPhysician) {
+			this.scheduledPerformingPhysician = scheduledPerformingPhysician;
+		}
+		
 		public String getPerformedProcedureStepStartTime() {
 			return performedProcedureStepStartTime;
+		}
+		
+		public void setPerformedProcedureStepStartTime(String performedProcedureStepStartTime) {
+			this.performedProcedureStepStartTime = performedProcedureStepStartTime;
+		}
+		
+		public void setPerformedProcedureStepStartDate(String performedProcedureStepStartDate) {
+			this.performedProcedureStepStartDate = performedProcedureStepStartDate;
 		}
 		
 		public String getPerformedProcedureStepStartDate() {
@@ -217,8 +241,16 @@ public class StudyUpdatePayload {
 			return performedProcedureStepDescription;
 		}
 		
+		public void setPerformedProcedureStepDescription(String performedProcedureStepDescription) {
+			this.performedProcedureStepDescription = performedProcedureStepDescription;
+		}
+		
 		public String getRequestedProcedureDescription() {
 			return requestedProcedureDescription;
+		}
+		
+		public void setRequestedProcedureDescription(String requestedProcedureDescription) {
+			this.requestedProcedureDescription = requestedProcedureDescription;
 		}
 	}
 	

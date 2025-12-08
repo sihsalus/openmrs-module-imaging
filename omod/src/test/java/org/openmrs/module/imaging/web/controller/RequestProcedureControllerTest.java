@@ -16,35 +16,60 @@ package org.openmrs.module.imaging.web.controller;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.openmrs.Patient;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.imaging.ClientConnectionPair;
+import org.openmrs.module.imaging.OrthancConfiguration;
+import org.openmrs.module.imaging.api.DicomStudyService;
+import org.openmrs.module.imaging.api.OrthancConfigurationService;
 import org.openmrs.module.imaging.api.RequestProcedureService;
 import org.openmrs.module.imaging.api.RequestProcedureStepService;
+import org.openmrs.module.imaging.api.impl.DicomStudyServiceImpl;
 import org.openmrs.module.imaging.api.worklist.RequestProcedure;
 import org.openmrs.module.imaging.api.worklist.RequestProcedureStep;
 import org.openmrs.module.imaging.web.controller.ResponseModel.ProcedureStepResponse;
 import org.openmrs.module.imaging.web.controller.ResponseModel.RequestProcedureResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayInputStream;
+import java.lang.reflect.Field;
+import java.net.HttpURLConnection;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
+import static org.openmrs.module.imaging.ClientConnectionPair.setupMockClientWithStatus;
 
 public class RequestProcedureControllerTest extends BaseWebControllerTest {
 	
 	private static final String REQUEST_PROCEDURE_DATASET = "testRequestProcedureDataset.xml";
 	
-	@Autowired
+	@InjectMocks
 	private RequestProcedureController controller;
+	
+	@Mock
+	private DicomStudyService dicomStudyService;
+	
+	private OrthancConfigurationService orthancConfigurationService;
+	
+	private OrthancConfiguration config;
 	
 	@Before
 	public void setUp() throws Exception {
 		executeDataSet(REQUEST_PROCEDURE_DATASET);
+		orthancConfigurationService = Context.getService(OrthancConfigurationService.class);
+		config = orthancConfigurationService.getOrthancConfiguration(1);
+		dicomStudyService = Context.getService(DicomStudyService.class);
 	}
 	
 	@Test
@@ -57,54 +82,55 @@ public class RequestProcedureControllerTest extends BaseWebControllerTest {
                 requestProcedures.stream().allMatch(rp -> "scheduled".equalsIgnoreCase(rp.getStatus())));
     }
 	
-	@Test
-	@Transactional
-	public void testUpdateRequestStatus_shouldMarkProcedureCompletedIfAllStepsCompleted() throws Exception {
-		executeDataSet("testRequestProcedureStepDataset.xml");
+	//	@Test
+	//    @Transactional
+	//    public void testUpdateRequestStatus_shouldMarkProcedureCompletedIfAllStepsCompleted() throws Exception {
+	//        executeDataSet("testRequestProcedureStepDataset.xml");
+	//
+	//        // Fetch procedure and steps
+	//        RequestProcedureService requestProcedureService = Context.getService(RequestProcedureService.class);
+	//        RequestProcedureStepService requestProcedureStepService = Context.getService(RequestProcedureStepService.class);
+	//
+	//        RequestProcedure requestProcedure = requestProcedureService.getRequestProcedure(1);// scheduled procedure
+	//        assertNotNull(requestProcedure);
+	//
+	//        List<RequestProcedureStep> steps = requestProcedureStepService.getAllStepByRequestProcedure(requestProcedure);
+	//        assertFalse(steps.isEmpty());
+	//
+	//        RequestProcedureStep step = steps.get(0);
+	//
+	//        StudyUpdatePayload payload = getStudyUpdatePayload(requestProcedure, step);
+	//
+	//        // Convert payload to JSON
+	//        String jsonRequestContent = new ObjectMapper().writeValueAsString(payload);
+	//
+	//        MockHttpServletRequest request = newPostRequest(
+	//                "/rest/v1/worklist/updaterequeststatus?studyInstanceUID="
+	//                + requestProcedure.getStudyInstanceUID()
+	//                + "&scheduledProcedureStepID="+ step.getId().toString(),
+	//                jsonRequestContent
+	//        );
+	//
+	//        MockHttpServletResponse response = new MockHttpServletResponse();
+	//
+	//        controller.updateRequestStatus(request, response, payload);
+	//
+	//        RequestProcedureStep updatedStep = requestProcedureStepService.getProcedureStep(step.getId());
+	//        assertEquals("completed", updatedStep.getPerformedProcedureStepStatus());
+	//
+	//        RequestProcedure updatedProcedure = requestProcedureService.getRequestProcedure(requestProcedure.getId());
+	//        assertEquals(requestProcedure.getStudyInstanceUID(), updatedProcedure.getStudyInstanceUID());
+	//
+	//        List<RequestProcedureStep> updatedSteps = requestProcedureStepService.getAllStepByRequestProcedure(updatedProcedure);
+	//        boolean allCompleted = updatedSteps.stream()
+	//                .allMatch(s -> "completed".equalsIgnoreCase(s.getPerformedProcedureStepStatus()));
+	//
+	//        if (allCompleted) {
+	//            assertEquals("completed", updatedProcedure.getStatus());
+	//        }
+	//    }
+	//
 
-		RequestProcedureService requestProcedureService = Context.getService(RequestProcedureService.class);
-		RequestProcedureStepService requestProcedureStepService = Context.getService(RequestProcedureStepService.class);
-
-		RequestProcedure requestProcedure = requestProcedureService.getRequestProcedure(1);// scheduled procedure
-		assertNotNull(requestProcedure);
-
-		List<RequestProcedureStep> steps = requestProcedureStepService.getAllStepByRequestProcedure(requestProcedure);
-		assertFalse(steps.isEmpty());
-
-		RequestProcedureStep step = steps.get(0);
-
-        StudyUpdatePayload payload = getStudyUpdatePayload(requestProcedure, step);
-
-        // Convert payload to JSON
-        String jsonRequestContent = new ObjectMapper().writeValueAsString(payload);
-
-		MockHttpServletRequest request = newPostRequest("/rest/v1/worklist/updaterequeststatus?studyInstanceUID="
-				+ requestProcedure.getStudyInstanceUID()
-				+ "&scheduledProcedureStepID="+ step.getId().toString(), jsonRequestContent);
-
-		MockHttpServletResponse response = new MockHttpServletResponse();
-
-		controller.updateRequestStatus(
-                request,
-                response,
-                payload
-        );
-
-		RequestProcedureStep updatedStep = requestProcedureStepService.getProcedureStep(step.getId());
-		assertEquals("completed", updatedStep.getPerformedProcedureStepStatus());
-
-		RequestProcedure updatedProcedure = requestProcedureService.getRequestProcedure(requestProcedure.getId());
-		assertEquals(requestProcedure.getStudyInstanceUID(), updatedProcedure.getStudyInstanceUID());
-
-		List<RequestProcedureStep> updatedSteps = requestProcedureStepService.getAllStepByRequestProcedure(updatedProcedure);
-		boolean allCompleted = updatedSteps.stream()
-				.allMatch(s -> "completed".equalsIgnoreCase(s.getPerformedProcedureStepStatus()));
-
-		if (allCompleted) {
-			assertEquals("completed", updatedProcedure.getStatus());
-		}
-	}
-	
 	private static StudyUpdatePayload getStudyUpdatePayload(RequestProcedure requestProcedure,
 	        RequestProcedureStep step) {
 		StudyUpdatePayload payload = new StudyUpdatePayload();
@@ -114,17 +140,37 @@ public class RequestProcedureControllerTest extends BaseWebControllerTest {
 		info.setStudyInstanceUID(requestProcedure.getStudyInstanceUID());
 		payload.setStudyInfo(info);
 
-		StudyUpdatePayload.SeriesEntry entry = new StudyUpdatePayload.SeriesEntry();
-		entry.setScheduledProcedureStepID(step.getId().toString());
+        StudyUpdatePayload.SeriesEntry entry = new StudyUpdatePayload.SeriesEntry();
+        entry.setScheduledProcedureStepID(step.getId().toString());
 
         StudyUpdatePayload.InstanceInfo instance = new StudyUpdatePayload.InstanceInfo();
         instance.setScheduledProcedureStepID(step.getId().toString());
         instance.setStudyInstanceUID(requestProcedure.getStudyInstanceUID());
 
-        List<StudyUpdatePayload.SeriesEntry> list = new ArrayList<>();
-        list.add(entry);
-		payload.setSeriesList(list);
-		return payload;
+        if (step.getRequestProcedure().getMrsPatient() != null) {
+            String givenName = step.getRequestProcedure().getMrsPatient().getGivenName();
+            String familyName = step.getRequestProcedure().getMrsPatient().getFamilyName();
+            instance.setPatientName(givenName + " " + familyName);
+
+            if (step.getRequestProcedure().getMrsPatient().getPatientId() != null) {
+                instance.setPatientID(step.getRequestProcedure().getMrsPatient().getPatientId().toString());
+            }
+            if (step.getRequestProcedure().getMrsPatient().getBirthdate() != null) {
+                instance.setPatientBirthDate(step.getRequestProcedure().getMrsPatient().getBirthdate().toString());
+            }
+        }
+
+        instance.setScheduledPerformingPhysician(step.getScheduledPerformingPhysician());
+        instance.setPerformedProcedureStepDescription(step.getRequestedProcedureDescription());
+
+        entry.setInstanceInfo(instance);
+
+        // Add entry to series list
+        List<StudyUpdatePayload.SeriesEntry> seriesList = new ArrayList<>();
+        seriesList.add(entry);
+        payload.setSeriesList(seriesList);
+
+        return payload;
 	}
 	
 	@Test

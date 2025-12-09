@@ -112,6 +112,32 @@ public class RequestProcedurePageController {
 	}
 	
 	/**
+	 * Update the procedure step status
+	 * 
+	 * @param stepId: The procedure step id
+	 * @param status : The new status of the step
+	 * @param patient: The openmrs patient
+	 */
+	@RequestMapping(value = "/module/imaging/updateStepStatus.form", method = RequestMethod.POST)
+	public String updateProcedureStepStatus(RedirectAttributes redirectAttributes,
+	        @RequestParam(value = "stepId") int stepId, @RequestParam(value = "status") String status,
+	        @RequestParam(value = "patientId") Patient patient) {
+		
+		RequestProcedureStepService requestProcedureStepService = Context.getService(RequestProcedureStepService.class);
+		RequestProcedureStep step = requestProcedureStepService.getProcedureStep(stepId);
+		
+		// Save whatever user selects (completed or rejected)
+		requestProcedureStepService.updatePerformedProcedureStepStatus(step, status);
+		
+		String message = "The performed status of the procedure step has been changed to " + status;
+		
+		redirectAttributes.addAttribute("patientId", patient.getId());
+		redirectAttributes.addAttribute("message", message);
+		
+		return "redirect:/imaging/requestProcedure.page";
+	}
+	
+	/**
 	 * @param redirectAttributes The redirect attributes
 	 * @param requestProcedureId The request procedure ID
 	 * @param patient The openmrs patient

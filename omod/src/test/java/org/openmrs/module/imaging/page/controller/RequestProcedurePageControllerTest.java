@@ -162,12 +162,6 @@ public class RequestProcedurePageControllerTest extends BaseModuleWebContextSens
 		String view = controller.deleteProcedureStep(redirectAttributes, stepId, patient);
 		
 		assertEquals("redirect:/imaging/requestProcedure.page", view);
-		//TODO: the test here is not completed.
-		//        assertEquals("Permission denied (you don't have the necessary privileges)",
-		//                redirectAttributes.getAttribute("message"));
-		
-		// Ensure step still exists
-		//assertNotNull(requestProcedureStepService.getProcedureStep(stepId));
 	}
 	
 }

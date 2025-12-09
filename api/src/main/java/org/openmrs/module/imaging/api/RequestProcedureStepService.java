@@ -35,4 +35,6 @@ public interface RequestProcedureStepService extends OpenmrsService {
 	void deleteProcedureStep(RequestProcedureStep requestProcedureStep) throws IOException;
 	
 	void updateProcedureStep(RequestProcedureStep requestProcedureStep);
+	
+	void updatePerformedProcedureStepStatus(RequestProcedureStep step, String newStatus);
 }

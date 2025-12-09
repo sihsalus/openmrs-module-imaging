@@ -63,8 +63,8 @@ public class DicomStudyServiceImpl extends BaseOpenmrsService implements DicomSt
 	}
 	
 	@Override
-	public void updateMatching(DicomStudy study, int newMatching) {
-		dao.updateStudyMatchingStatus(study, newMatching);
+	public void updateLinkStatus(DicomStudy study, int newLinkStatus) {
+		dao.updateLinkStatus(study, newLinkStatus);
 	}
 	
 	/**

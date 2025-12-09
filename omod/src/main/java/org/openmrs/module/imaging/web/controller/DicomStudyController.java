@@ -227,18 +227,18 @@ public class DicomStudyController {
             return new ResponseEntity<>("studyId or patient UUID is missing", HttpStatus.BAD_REQUEST);
         }
         if (isAssign) {
-            study.setMrsPatient(patient);
-            study.setLinkStatus(0);
+            dicomStudyService.setPatient(study, patient);
+            dicomStudyService.updateLinkStatus(study, 0);
         } else {
-            study.setMrsPatient(null);
-            study.setLinkStatus(-1);
+            dicomStudyService.setPatient(study,null);
+            dicomStudyService.updateLinkStatus(study, -1);
         }
         return new ResponseEntity<>("", HttpStatus.OK);
     }
 	
 	@RequestMapping(value="/updatestudyLinkStatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional
-    public ResponseEntity<Object> updateStudyMatchingStatus(
+    public ResponseEntity<Object> updateStudyLinkStatus(
             @RequestParam(value="studyId") int studyId,
             @RequestParam(value="linkStatus") int linkStatus,
             HttpServletRequest request,
@@ -250,7 +250,7 @@ public class DicomStudyController {
         if (studyId <= 0) {
             return new ResponseEntity<>("studyId is missing", HttpStatus.BAD_REQUEST);
         } else {
-            dicomStudyService.updateMatching(study, linkStatus);
+            dicomStudyService.updateLinkStatus(study, linkStatus);
         }
         return new ResponseEntity<>("", HttpStatus.OK);
     }

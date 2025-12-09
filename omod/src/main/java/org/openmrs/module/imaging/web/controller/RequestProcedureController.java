@@ -176,7 +176,11 @@ public class RequestProcedureController {
 
             if (step != null && step.getRequestProcedure() != null) {
                 // Update the procedure step status
-                step.setPerformedProcedureStepStatus("completed");
+                if (!step.getPerformedProcedureStepStatus().equals("rejected")) {
+                    requestProcedureStepService.updatePerformedProcedureStepStatus(step, "completed");
+                } else {
+                    continue;
+                }
 
                 // Set the study instance UID created by modality device
                 step.getRequestProcedure().setStudyInstanceUID(studyInstanceUID);
@@ -237,9 +241,9 @@ public class RequestProcedureController {
             int score = comparisonResult.getScore();
 
             if (score == 100) {
-                study.setLinkStatus(2);
+                dicomStudyService.updateLinkStatus(study, 2);
             } else {
-                study.setLinkStatus(1);
+                dicomStudyService.updateLinkStatus(study, 1);
             }
 
             String json = mapper.writeValueAsString(comparisonResult);
@@ -407,7 +411,7 @@ public class RequestProcedureController {
         if (stepId <= 0) {
             return new ResponseEntity<>("step ID is missing", HttpStatus.BAD_REQUEST);
         } else {
-            step.setPerformedProcedureStepStatus(status);
+            requestProcedureStepService.updatePerformedProcedureStepStatus(step, status);
         }
         return new ResponseEntity<>("", HttpStatus.OK);
     }

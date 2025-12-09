@@ -66,4 +66,9 @@ public class RequestProcedureStepDao {
 	public void remove(RequestProcedureStep requestProcedureStep) {
 		getSession().delete(requestProcedureStep);
 	}
+	
+	public void updatePerformedProcedureStepStatus(RequestProcedureStep step, String newStatus) {
+		step.setPerformedProcedureStepStatus(newStatus);
+		getSession().update(step);
+	}
 }

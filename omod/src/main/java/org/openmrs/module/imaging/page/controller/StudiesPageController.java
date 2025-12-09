@@ -208,13 +208,13 @@ public class StudiesPageController {
 	        @RequestParam(value = "studyId") int studyId, int linkStatus) {
 		DicomStudyService dicomStudyService = Context.getService(DicomStudyService.class);
 		DicomStudy study = dicomStudyService.getDicomStudy(studyId);
-		study.setLinkStatus(linkStatus);
+		dicomStudyService.updateLinkStatus(study, linkStatus);
 		String message;
 		if (linkStatus == -1) {
-			dicomStudyService.setPatient(dicomStudyService.getDicomStudy(studyId), null);
+			dicomStudyService.setPatient(study, null);
 			message = "Study has been unlinked to the patient";
 		} else {
-			dicomStudyService.setPatient(dicomStudyService.getDicomStudy(studyId), patient);
+			dicomStudyService.setPatient(study, patient);
 			message = "Study linked to the patient";
 		}
 		

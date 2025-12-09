@@ -68,11 +68,11 @@ public class SyncStudiesPageController {
 		String message;
 		DicomStudy study = dicomStudyService.getDicomStudy(studyId);
 		if (isChecked) {
-			study.setLinkStatus(0);
+			dicomStudyService.updateLinkStatus(study, 0);
 			dicomStudyService.setPatient(study, patient);
 			message = "Study assigned to patient";
 		} else {
-			study.setLinkStatus(-1);
+			dicomStudyService.updateLinkStatus(study, -1);
 			dicomStudyService.setPatient(study, null);
 			message = "Study assignment removed";
 		}

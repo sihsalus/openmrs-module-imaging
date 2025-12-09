@@ -49,8 +49,8 @@ public class RequestProcedureControllerTest extends BaseWebControllerTest {
 	public void setUp() throws Exception {
 		executeDataSet(REQUEST_PROCEDURE_DATASET);
 	}
-
-    private static StudyUpdatePayload getStudyUpdatePayload(RequestProcedure requestProcedure,
+	
+	private static StudyUpdatePayload getStudyUpdatePayload(RequestProcedure requestProcedure,
                                                             RequestProcedureStep step) {
         StudyUpdatePayload payload = new StudyUpdatePayload();
 
@@ -150,7 +150,7 @@ public class RequestProcedureControllerTest extends BaseWebControllerTest {
 	//        }
 	//    }
 	//
-
+	
 	@Test
 	@Transactional
 	public void testUpdateProcedureStepStatus_InvalidStepId() {

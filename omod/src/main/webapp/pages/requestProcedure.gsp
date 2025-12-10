@@ -86,12 +86,6 @@ ${ ui.includeFragment("uicommons", "infoAndErrorMessage")}
 
         if (value === "completed" || value === "rejected") {
             togglePopupUpdateProcedureStepStatus(stepId, value, patient);
-        } else {
-          document.updateStepStatusForm.action = "/${contextPath}/module/imaging/updateStepStatus.form?stepId="
-                                                       + stepId
-                                                       + "&status=" + value
-                                                       + "&patientId=" + patient;
-          document.updateStepStatusForm.submit();
         }
     }
 
@@ -105,7 +99,6 @@ ${ ui.includeFragment("uicommons", "infoAndErrorMessage")}
                                                + "&status=" + value
                                                + "&patientId=" + patient;
     }
-
 </script>
 
 <div>

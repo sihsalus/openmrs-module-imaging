@@ -18,7 +18,7 @@ ${ ui.includeFragment("uicommons", "infoAndErrorMessage")}
 <% ui.includeJavascript("imaging", "filter_table.js")%>
 
 <h2>
-    ${ ui.message("imaging.studies") }
+    ${ ui.message("imaging.studies") }y
 </h2>
 
 <div style="color:red;">
@@ -74,7 +74,7 @@ ${param["message"]?.getAt(0) ?: ""}
         const scoreSpan = document.getElementById("matching-score");
         if (!tbody || !scoreSpan ) return;
 
-        tbody.innerHTML = "<tr><td colspan='4'>Loading comparison result data...</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='4'>Loading difference data...</td></tr>";
 
         const url = '/${contextPath}/module/imaging/fetchStudyComparisonResult.form?studyId=' + studyId
 
@@ -96,11 +96,11 @@ ${param["message"]?.getAt(0) ?: ""}
                         tbody.appendChild(tr);
                      });
                 } else {
-                    tbody.innerHTML = "<tr><td colspan='3'>No comparison result available</td></tr>";
+                    tbody.innerHTML = "<tr><td colspan='3'>No difference data available</td></tr>";
                 }
             })
             .catch((error) => {
-                tbody.innerHTML = "<tr><td colspan='3'>Failed to load comparison result: " + error.message + "</td></tr>";
+                tbody.innerHTML = "<tr><td colspan='3'>Failed to load difference data: " + error.message + "</td></tr>";
             });
 
         document.linkingStudyForm.action = "/${contextPath}/module/imaging/autoLinkStudy.form?patientId="
@@ -264,7 +264,7 @@ ${param["message"]?.getAt(0) ?: ""}
         <h2>Unlink image study</h2>
         <form name="linkingStudyForm" class="form-container" method='POST'>
             <h3>Calculated matching score:<span id="matching-score">xx%</span></h3>
-            <h3 style="margin-top: 10px; margin-bottom: 10px;">Comparison result:</h3>
+            <h3 style="margin-top: 10px; margin-bottom: 10px;">Difference:</h3>
             <table class="table comparisonTable no-filter">
                 <thead>
                     <tr>

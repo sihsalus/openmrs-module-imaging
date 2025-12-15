@@ -13,9 +13,13 @@
  */
 package org.openmrs.module.imaging.web.controller;
 
+import me.xdrop.fuzzywuzzy.FuzzySearch;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import org.openmrs.Patient;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import org.openmrs.api.PatientService;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.imaging.OrthancConfiguration;
@@ -43,8 +47,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static org.apache.logging.log4j.core.util.Assert.isNonEmpty;
-
 @Controller("${rootrootArtifactId}.RequestProcedureController")
 @RequestMapping("/rest/" + RestConstants.VERSION_1 + "/worklist")
 public class RequestProcedureController {
@@ -52,6 +54,8 @@ public class RequestProcedureController {
 	protected Log log = LogFactory.getLog(this.getClass());
 	
 	private static final ObjectMapper mapper = new ObjectMapper();
+
+	private static final int FUZZY_THRESHOLD = 90;
 	
 	@RequestMapping(value = "/requests", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional
@@ -171,8 +175,15 @@ public class RequestProcedureController {
             }
 
             // Fetch the step
+            int stepId;
+            try {
+                stepId = Integer.parseInt(scheduledProcedureStepID);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid step ID: " + scheduledProcedureStepID);
+                continue;
+            }
             RequestProcedureStep step =
-                    requestProcedureStepService.getProcedureStep(Integer.parseInt(scheduledProcedureStepID));
+                    requestProcedureStepService.getProcedureStep(stepId);
 
             if (step != null && step.getRequestProcedure() != null) {
                 // Update the procedure step status
@@ -218,6 +229,13 @@ public class RequestProcedureController {
         return ResponseEntity.ok("No series data found in payload");
     }
 	
+	/**
+	 * @param requestProcedure The procedure for requesting patient image data.
+	 * @param payload The metadata of image study for comparison
+	 * @param comparisonResult The result of comparing the metadata from the Image Study with that
+	 *            from OpenMRS.
+	 * @throws IOException
+	 */
 	private void assignRequestProceduredStudyToPatient (RequestProcedure requestProcedure,
                                                         StudyUpdatePayload payload, ComparisonResult comparisonResult)
 	        throws IOException {
@@ -252,6 +270,11 @@ public class RequestProcedureController {
         }
 	}
 	
+	/**
+	 * @param requestProcedure The procedure for requesting patient image data.
+	 * @param stepList The procedure steps of the request procedure
+	 * @param payload The metadata of image study for comparison
+	 */
 	private ComparisonResult compareWorklistStudyData (
             RequestProcedure requestProcedure,
             List<RequestProcedureStep> stepList,
@@ -267,8 +290,9 @@ public class RequestProcedureController {
         // 1. Study-level comparison
         String accessionDB = requestProcedure.getAccessionNumber();
         String accessionPayload = payload.getStudyInfo().getAccessionNumber();
-        if (isNonEmpty(accessionDB) && accessionDB.equalsIgnoreCase(accessionPayload)) {
-            score += 20;
+        if (isNotBlank(accessionDB) && isNotBlank(accessionPayload) &&
+                accessionDB.equalsIgnoreCase(accessionPayload)) {
+            score += 10;
         } else {
             diffs.add(new DicomDifference("AccessionNumber", accessionDB, accessionPayload));
         }
@@ -276,21 +300,23 @@ public class RequestProcedureController {
         // referringPhysicianName
         String requestingPhysicianDB = requestProcedure.getRequestingPhysician();
         String requestingPhysicianPayload = payload.getStudyInfo().getReferringPhysicianName();
-        if (isNonEmpty(requestingPhysicianDB)&& requestingPhysicianPayload != null &&
-                requestingPhysicianDB.toLowerCase().contains(requestingPhysicianPayload.toLowerCase())) {
-            score += 10;
-        } else {
+        if (isFuzzyMatch(requestingPhysicianDB, requestingPhysicianPayload, FUZZY_THRESHOLD)) {
             diffs.add(new DicomDifference("RequestingPhysician", requestingPhysicianDB, requestingPhysicianPayload));
+        } else {
+            score += 10;
         }
 
         //2. Step-level comparison
         if (stepList != null && !stepList.isEmpty() && payload.getSeriesList() != null) {
             int stepScoreTotal = 0;
-            int maxStepScore = 70;
+            int maxStepScorePerStep = 100;
+            int normalizedStepMax = 80;
 
             for (RequestProcedureStep step : stepList) {
                 StudyUpdatePayload.SeriesEntry entry = payload.getSeriesList().stream()
-                        .filter(s -> step.getId().toString().equalsIgnoreCase(s.getScheduledProcedureStepID()))
+                        .filter(s -> step.getId() != null
+                                && s.getScheduledProcedureStepID() != null
+                                && step.getId().toString().equalsIgnoreCase(s.getScheduledProcedureStepID()))
                         .findFirst()
                         .orElse(null);
                 if (entry == null) { continue; }
@@ -299,46 +325,56 @@ public class RequestProcedureController {
 
                 // Extract entry components safely
                 StudyUpdatePayload.InstanceInfo inst = entry.getInstanceInfo();
+                String patientNameDB = getPatientNameDB(step);
+
                 StudyUpdatePayload.SeriesInfo series = entry.getSeriesInfo();
+                String patientNamePayload = inst != null
+                        ? inst.getPatientName()
+                        : null;
+                String normalizedPatientNamePayload = patientNamePayload != null
+                        ? patientNamePayload.replace("^", " ").trim()
+                        : "";
 
-                // Patient Name
-                String givenName = step.getRequestProcedure().getMrsPatient().getGivenName();
-                String givenNameDB = (givenName == null) ? "" : givenName;
-                String familyName = step.getRequestProcedure().getMrsPatient().getFamilyName();
-                String familyNameDB = (familyName == null) ? "" : familyName;
-                String patientNameDB = (givenNameDB + " " + familyNameDB).trim();
-
-                String patientNamePayload = inst != null ? inst.getPatientName() : null;
-
-                if (isNonEmpty(patientNamePayload)
-                        && isNonEmpty(givenNameDB)
-                        && patientNamePayload.equalsIgnoreCase(givenNameDB)) {
-                    score += 25;
+                if (isFuzzyMatch(patientNameDB, normalizedPatientNamePayload, FUZZY_THRESHOLD)) {
+                    diffs.add(new DicomDifference("PatientName", patientNameDB, normalizedPatientNamePayload, step.getId().toString()));
                 } else {
-                    diffs.add(new DicomDifference("PatientName", patientNameDB, patientNamePayload));
+                    stepScore += 15;
                 }
 
                 // Patient ID
-                String patientIdDB = step.getRequestProcedure().getMrsPatient().getPatientId() != null
-                        ? step.getRequestProcedure().getMrsPatient().getPatientId().toString()
+                Patient patient = step.getRequestProcedure() != null
+                        ? step.getRequestProcedure().getMrsPatient()
+                        : null;
+
+                String patientIdDB = patient != null && patient.getPatientId() != null
+                        ? patient.getPatientId().toString()
                         : null;
 
                 String patientIdPayload = inst != null ? inst.getPatientID() : null;
 
-                if (isNonEmpty(patientIdPayload) && patientIdPayload.equalsIgnoreCase(patientIdDB)){
-                    score += 10;
+                if (isNotBlank(patientIdPayload) && patientIdPayload.equalsIgnoreCase(patientIdDB)){
+                    stepScore += 10;
                 } else {
                     diffs.add(new DicomDifference("PatientID",  patientIdDB, patientIdPayload));
                 }
 
                 // Patient birthdate
-                String patientBirthDateDB = step.getRequestProcedure().getMrsPatient().getBirthdate() != null
-                        ? step.getRequestProcedure().getMrsPatient().getBirthdate().toString()
+                Date birthDate = patient != null && patient.getBirthdate() != null
+                        ? patient.getBirthdate()
                         : null;
-                String patientBirthDatePayload = entry.getInstanceInfo() != null ? entry.getInstanceInfo().getPatientBirthDate() : null;
 
-                if (isNonEmpty(patientBirthDatePayload) && patientBirthDatePayload.equalsIgnoreCase(patientBirthDateDB)) {
-                    stepScore += 10;
+                String patientBirthDateDB = null;
+                if (birthDate != null) {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+                    patientBirthDateDB = sdf.format(birthDate);
+                }
+
+                String patientBirthDatePayload = entry.getInstanceInfo() != null
+                        ? entry.getInstanceInfo().getPatientBirthDate()
+                        : null;
+
+                if (isNotBlank(patientBirthDatePayload) && patientBirthDatePayload.equalsIgnoreCase(patientBirthDateDB)) {
+                    stepScore += 15;
                 } else {
                     diffs.add(new DicomDifference("PatientBirthDate", patientBirthDateDB, patientBirthDatePayload));
                 }
@@ -347,8 +383,8 @@ public class RequestProcedureController {
                 String modalityDB = step.getModality();
                 String modalityPayload = series != null ? series.getModality() : null;
 
-                if (isNonEmpty(modalityDB) && modalityDB.equalsIgnoreCase(modalityPayload)) {
-                    stepScore += 25;
+                if (isNotBlank(modalityDB) && modalityDB.equalsIgnoreCase(modalityPayload)) {
+                    stepScore += 10;
                 } else {
                     diffs.add(new DicomDifference("Modality", modalityDB, modalityPayload, step.getId().toString()));
                 }
@@ -356,48 +392,63 @@ public class RequestProcedureController {
                 // Scheduled performing physician
                 String scheduledPhysicianDB = step.getScheduledPerformingPhysician();
                 String scheduledPhysicianPayload = inst != null ? inst.getScheduledPerformingPhysician() : null;
-
-                if (isNonEmpty(scheduledPhysicianDB)
-                        && isNonEmpty(scheduledPhysicianPayload)
-                        && scheduledPhysicianPayload.toLowerCase().contains(scheduledPhysicianDB.toLowerCase())) {
-                    stepScore += 10;
+                if (isFuzzyMatch(scheduledPhysicianDB, scheduledPhysicianPayload, FUZZY_THRESHOLD)) {
+                    diffs.add(new DicomDifference("ScheduledPerformingPhysician", scheduledPhysicianDB, scheduledPhysicianPayload, step.getId().toString()));
                 } else {
-                    diffs.add(new DicomDifference("ScheduledPerformingPhysician",
-                            scheduledPhysicianDB, scheduledPhysicianPayload, step.getId().toString()));
+                    stepScore += 10;
                 }
 
                 // Requested procedure description
                 String requestedProcedureDB = step.getRequestedProcedureDescription();
                 String performedProcedurePayload = inst != null ? inst.getPerformedProcedureStepDescription() : null;
-
-                if (isNonEmpty(requestedProcedureDB)
-                        && isNonEmpty(performedProcedurePayload)
-                        && performedProcedurePayload.toLowerCase().contains(requestedProcedureDB.toLowerCase())) {
-                    stepScore += 10;
+                if (isFuzzyMatch(requestedProcedureDB, performedProcedurePayload, FUZZY_THRESHOLD)) {
+                    diffs.add(new DicomDifference("PerformedProcedureStepDescription", requestedProcedureDB, performedProcedurePayload, step.getId().toString()));
                 } else {
-                    diffs.add(new DicomDifference("PerformedProcedureStepDescription",
-                            requestedProcedureDB, performedProcedurePayload, step.getId().toString()));
+                    stepScore += 10;
                 }
 
                 // Station Name
                 String stationDB = step.getStationName();
                 String stationPayload = series != null ? series.getStationName() : null;
 
-                if (isNonEmpty(stationDB) && stationDB.equalsIgnoreCase(stationPayload)) {
-                    stepScore += 10;
+                if (isFuzzyMatch(stationDB, stationPayload, FUZZY_THRESHOLD)) {
+                    diffs.add(new DicomDifference("StationName", stationDB, stationPayload, step.getId().toString()));
                 } else {
-                    diffs.add(new DicomDifference("StationName",
-                            stationDB, stationPayload, step.getId().toString()));
+                    stepScore += 10;
                 }
 
                 stepScoreTotal += stepScore;
             }
 
-            int possibleStepsPoints = stepList.size() * maxStepScore;
-            score += (int) (((double) stepScoreTotal / (double) possibleStepsPoints) * maxStepScore);
+            int totalPossibleStepPoints = stepList.size() * maxStepScorePerStep;
+            if (totalPossibleStepPoints > 0 ) {
+                int normalizedStepScore = (int)((double) stepScoreTotal / totalPossibleStepPoints * normalizedStepMax);
+                score += normalizedStepScore;
+            }
         }
         return new ComparisonResult(score, diffs);
     }
+
+	private boolean isFuzzyMatch(String a, String b, int threshold) {
+		if (isNotBlank(a) && isNotBlank(b)) {
+			int score = FuzzySearch.tokenSetRatio(a.toLowerCase(Locale.ROOT), b.toLowerCase(Locale.ROOT));
+			return score < threshold;
+		}
+		return true;
+	}
+	
+	/**
+	 * @param step The procedure step of worklist request
+	 * @return The retrieved patient name
+	 */
+	private static String getPatientNameDB(RequestProcedureStep step) {
+		Patient patient = step.getRequestProcedure() != null ? step.getRequestProcedure().getMrsPatient() : null;
+		
+		String givenNameDB = patient != null && patient.getGivenName() != null ? patient.getGivenName().trim() : "";
+		
+		String familyNameDB = patient != null && patient.getFamilyName() != null ? patient.getFamilyName().trim() : "";
+		return (givenNameDB + " " + familyNameDB).trim();
+	}
 	
 	@RequestMapping(value = "/updateprocedurestepstatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional

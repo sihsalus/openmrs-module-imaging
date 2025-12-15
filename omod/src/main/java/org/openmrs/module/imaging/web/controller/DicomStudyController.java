@@ -90,9 +90,16 @@ public class DicomStudyController {
         studiesWithScore.studies = DicomStudyResponse.createResponse(studies);
         studiesWithScore.scores = new HashMap<String,Integer>();
         for (DicomStudy study : studies) {
+            String dbName = ((patient.getGivenName() != null) ? patient.getGivenName().trim() : "")
+                    + " "
+                    + ((patient.getFamilyName() != null) ? patient.getFamilyName().trim() : "");
+
+            String studyName = (study.getPatientName() != null) ? study.getPatientName().trim() : "";
+            dbName = dbName.toLowerCase(Locale.ROOT);
+            studyName = studyName.toLowerCase(Locale.ROOT);
+
             // FuzzySearch by https://github.com/xdrop/fuzzywuzzy?tab=readme-ov-file
-            int score = FuzzySearch.tokenSetRatio(patient.getGivenName() + " " + patient.getFamilyName(),
-                    study.getPatientName());
+            int score = FuzzySearch.tokenSetRatio(dbName, studyName);
             studiesWithScore.scores.put(study.getStudyInstanceUID(), score);
         }
 

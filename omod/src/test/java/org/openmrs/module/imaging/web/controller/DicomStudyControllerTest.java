@@ -110,7 +110,7 @@ public class DicomStudyControllerTest extends BaseWebControllerTest {
 		
 		Map<String, Integer> scores = body.scores;
 		assertTrue(scores.containsKey("studyInstanceUID555"));
-		assertTrue(scores.get("studyInstanceUID555") > 0); // fuzzy score > 0
+		assertTrue(scores.get("studyInstanceUID555") > 0);
 	}
 	
 	@Test

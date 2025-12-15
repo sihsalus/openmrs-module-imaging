@@ -54,7 +54,7 @@ public class RequestProcedureController {
 	protected Log log = LogFactory.getLog(this.getClass());
 	
 	private static final ObjectMapper mapper = new ObjectMapper();
-
+	
 	private static final int FUZZY_THRESHOLD = 90;
 	
 	@RequestMapping(value = "/requests", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -428,7 +428,7 @@ public class RequestProcedureController {
         }
         return new ComparisonResult(score, diffs);
     }
-
+	
 	private boolean isFuzzyMatch(String a, String b, int threshold) {
 		if (isNotBlank(a) && isNotBlank(b)) {
 			int score = FuzzySearch.tokenSetRatio(a.toLowerCase(Locale.ROOT), b.toLowerCase(Locale.ROOT));

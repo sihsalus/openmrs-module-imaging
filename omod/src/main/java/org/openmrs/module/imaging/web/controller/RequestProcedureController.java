@@ -55,7 +55,7 @@ public class RequestProcedureController {
 	
 	private static final ObjectMapper mapper = new ObjectMapper();
 	
-	private static final int FUZZY_THRESHOLD = 90;
+	private static final int FUZZY_THRESHOLD = 98;
 	
 	@RequestMapping(value = "/requests", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional

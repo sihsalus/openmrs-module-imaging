@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>io.github.proyecto-santaclotilde</groupId>
 		<artifactId>imaging</artifactId>
-		<version>1.1.6</version>
+		<version>1.1.7</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
@@ -26,21 +26,10 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.openmrs.module</groupId>
-			<artifactId>legacyui-omod</artifactId>
-			<version>${legacyuiVersion}</version>
-<!--			<scope>provided</scope>-->
-		</dependency>
-		<dependency>
 			<groupId>org.openmrs.web</groupId>
 			<artifactId>openmrs-web</artifactId>
 			<scope>provided</scope>
 			<classifier>tests</classifier>
-		</dependency>
-		<dependency>
-			<groupId>org.openmrs.module</groupId>
-			<artifactId>uiframework-api</artifactId>
-			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>me.xdrop</groupId>

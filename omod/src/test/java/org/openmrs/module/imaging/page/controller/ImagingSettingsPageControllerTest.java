@@ -14,7 +14,6 @@
 
 package org.openmrs.module.imaging.page.controller;
 
-import org.directwebremoting.util.DelegatingServletOutputStream;
 import org.junit.Before;
 import org.junit.Test;
 import org.openmrs.api.context.Context;
@@ -29,7 +28,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
 
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -43,6 +45,29 @@ public class ImagingSettingsPageControllerTest extends BaseModuleWebContextSensi
 	private DicomStudyService dicomStudyService;
 	
 	private RequestProcedureService requestProcedureService;
+
+	private static class ByteArrayServletOutputStream extends ServletOutputStream {
+		
+		private final ByteArrayOutputStream delegate;
+		
+		private ByteArrayServletOutputStream(ByteArrayOutputStream delegate) {
+			this.delegate = delegate;
+		}
+		
+		@Override
+		public boolean isReady() {
+			return true;
+		}
+		
+		@Override
+		public void setWriteListener(WriteListener writeListener) {
+		}
+		
+		@Override
+		public void write(int b) throws IOException {
+			delegate.write(b);
+		}
+	}
 	
 	@Before
 	public void setUp() throws Exception {
@@ -102,7 +127,7 @@ public class ImagingSettingsPageControllerTest extends BaseModuleWebContextSensi
 	public void testCheckConfiguration_shouldReturnMessage() throws Exception {
 		HttpServletResponse response = mock(HttpServletResponse.class);
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		when(response.getOutputStream()).thenReturn(new DelegatingServletOutputStream(outputStream));
+		when(response.getOutputStream()).thenReturn(new ByteArrayServletOutputStream(outputStream));
 		
 		controller.checkConfiguration(response, "http://localhost:8052", "", "orthanc", "orthanc");
 		
@@ -114,7 +139,7 @@ public class ImagingSettingsPageControllerTest extends BaseModuleWebContextSensi
 	public void testCheckConfiguration_shouldReturnInvalidMessage() throws Exception {
 		HttpServletResponse response = mock(HttpServletResponse.class);
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		when(response.getOutputStream()).thenReturn(new DelegatingServletOutputStream(outputStream));
+		when(response.getOutputStream()).thenReturn(new ByteArrayServletOutputStream(outputStream));
 		
 		controller.checkConfiguration(response, "http://localhost:8062", "", "orthanc", "orthanc");
 		String invalidResponseText = outputStream.toString();

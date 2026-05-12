@@ -15,6 +15,7 @@ package org.openmrs.module.imaging.web.controller;
 import me.xdrop.fuzzywuzzy.FuzzySearch;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openmrs.annotation.Authorized;
 import org.openmrs.Patient;
 import org.openmrs.api.PatientService;
 import org.openmrs.api.context.Context;
@@ -46,6 +47,7 @@ import java.util.*;
  */
 @Controller("${rootrootArtifactId}.DicomStudyController")
 @RequestMapping("/rest/" + RestConstants.VERSION_1 + "/" + ImagingConstants.MODULE_ID)
+@Authorized("Task: Modify Image Data")
 public class DicomStudyController {
 	
 	protected Log log = LogFactory.getLog(this.getClass());

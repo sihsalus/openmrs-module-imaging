@@ -17,6 +17,7 @@ import me.xdrop.fuzzywuzzy.FuzzySearch;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import org.openmrs.annotation.Authorized;
 import org.openmrs.Patient;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -49,6 +50,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Controller("${rootrootArtifactId}.RequestProcedureController")
 @RequestMapping("/rest/" + RestConstants.VERSION_1 + "/worklist")
+@Authorized("Task: Edit Worklist")
 public class RequestProcedureController {
 	
 	protected Log log = LogFactory.getLog(this.getClass());

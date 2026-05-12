@@ -23,6 +23,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import org.openmrs.api.PatientService;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.imaging.ImagingConstants;
 import org.openmrs.module.imaging.OrthancConfiguration;
 import org.openmrs.module.imaging.api.DicomStudyService;
 import org.openmrs.module.imaging.api.OrthancConfigurationService;
@@ -50,16 +51,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Controller("${rootrootArtifactId}.RequestProcedureController")
 @RequestMapping("/rest/" + RestConstants.VERSION_1 + "/worklist")
-@Authorized("Task: Edit Worklist")
 public class RequestProcedureController {
-	
+
 	protected Log log = LogFactory.getLog(this.getClass());
-	
+
 	private static final ObjectMapper mapper = new ObjectMapper();
-	
+
 	private static final int FUZZY_THRESHOLD = 98;
-	
+
+	private static final Set<String> ALLOWED_REQUEST_STATUSES = new HashSet<String>(Arrays.asList("scheduled", "progress",
+	    "in progress", "completed"));
+
+	private static final Set<String> ALLOWED_STEP_STATUSES = new HashSet<String>(Arrays.asList("scheduled", "in progress",
+	    "completed", "rejected"));
+
 	@RequestMapping(value = "/requests", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	@Authorized(ImagingConstants.PRIVILEGE_EDIT_WORKLIST)
     @Transactional
     public ResponseEntity<Object> useRequestProcedures(
             @RequestParam(value = "status", required = false, defaultValue = "all") String status,
@@ -74,6 +81,9 @@ public class RequestProcedureController {
 
         boolean filterAll = status == null || status.trim().isEmpty() || status.equalsIgnoreCase("all");
         String normalizedStatus = filterAll ? "" : status.trim().toLowerCase();
+        if (!filterAll && !ALLOWED_REQUEST_STATUSES.contains(normalizedStatus)) {
+            return new ResponseEntity<Object>("Invalid request status", HttpStatus.BAD_REQUEST);
+        }
 
         // Determine the database status to query
         String dbStatus = filterAll ? "" : statusMapping.getOrDefault(normalizedStatus, status.trim());
@@ -92,7 +102,7 @@ public class RequestProcedureController {
         }
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
-	
+
 	/**
 	 * @param rp The request procedure object
 	 * @param map The worklist data map
@@ -127,7 +137,7 @@ public class RequestProcedureController {
 		}
 		map.put("ScheduledProcedureStepSequence", stepList);
 	}
-	
+
 	/**
 	 * @param step The request procedure step
 	 * @param stepList The list of the procedure step
@@ -147,14 +157,18 @@ public class RequestProcedureController {
 		stepMap.put("CommentsOnTheScheduledProcedureStep", "no value available");
 		stepList.add(stepMap);
 	}
-	
+
 	/**
 	 * @param payload The whole study data procedure that has been performed in this step.
 	 */
 	@RequestMapping(value = "/updaterequeststatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+	@Authorized(ImagingConstants.PRIVILEGE_RECEIVE_ORTHANC_UPDATES)
 	@Transactional
     public ResponseEntity<?> updateRequestStatus(HttpServletRequest request, HttpServletResponse response,
                                                                 @RequestBody StudyUpdatePayload payload) throws IOException {
+		if (payload == null || payload.getStudyInfo() == null || payload.getSeriesList() == null) {
+			return new ResponseEntity<String>("Invalid Orthanc update payload", HttpStatus.BAD_REQUEST);
+		}
         RequestProcedureService requestProcedureService = Context.getService(RequestProcedureService.class);
 		RequestProcedureStepService requestProcedureStepService = Context.getService(RequestProcedureStepService.class);
 
@@ -230,7 +244,7 @@ public class RequestProcedureController {
         }
         return ResponseEntity.ok("No series data found in payload");
     }
-	
+
 	/**
 	 * @param requestProcedure The procedure for requesting patient image data.
 	 * @param payload The metadata of image study for comparison
@@ -271,7 +285,7 @@ public class RequestProcedureController {
             study.setMrsPatient(patient);
         }
 	}
-	
+
 	/**
 	 * @param requestProcedure The procedure for requesting patient image data.
 	 * @param stepList The procedure steps of the request procedure
@@ -430,7 +444,7 @@ public class RequestProcedureController {
         }
         return new ComparisonResult(score, diffs);
     }
-	
+
 	private boolean isFuzzyMatch(String a, String b, int threshold) {
 		if (isNotBlank(a) && isNotBlank(b)) {
 			int score = FuzzySearch.tokenSetRatio(a.toLowerCase(Locale.ROOT), b.toLowerCase(Locale.ROOT));
@@ -438,21 +452,22 @@ public class RequestProcedureController {
 		}
 		return true;
 	}
-	
+
 	/**
 	 * @param step The procedure step of worklist request
 	 * @return The retrieved patient name
 	 */
 	private static String getPatientNameDB(RequestProcedureStep step) {
 		Patient patient = step.getRequestProcedure() != null ? step.getRequestProcedure().getMrsPatient() : null;
-		
+
 		String givenNameDB = patient != null && patient.getGivenName() != null ? patient.getGivenName().trim() : "";
-		
+
 		String familyNameDB = patient != null && patient.getFamilyName() != null ? patient.getFamilyName().trim() : "";
 		return (givenNameDB + " " + familyNameDB).trim();
 	}
-	
+
 	@RequestMapping(value = "/updateprocedurestepstatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+	@Authorized(ImagingConstants.PRIVILEGE_EDIT_WORKLIST)
     @Transactional
     public ResponseEntity<?> updateProcedureStepStatus(
             @RequestParam(value="stepId") int stepId,
@@ -460,20 +475,26 @@ public class RequestProcedureController {
             HttpServletRequest request, HttpServletResponse response ) {
 
         RequestProcedureStepService requestProcedureStepService = Context.getService(RequestProcedureStepService.class);
-        RequestProcedureStep step = requestProcedureStepService.getProcedureStep(stepId);
         if (stepId <= 0) {
             return new ResponseEntity<>("step ID is missing", HttpStatus.BAD_REQUEST);
-        } else {
-            requestProcedureStepService.updatePerformedProcedureStepStatus(step, status);
         }
+        if (status == null || !ALLOWED_STEP_STATUSES.contains(status.trim().toLowerCase(Locale.ROOT))) {
+            return new ResponseEntity<>("Invalid procedure step status", HttpStatus.BAD_REQUEST);
+        }
+        RequestProcedureStep step = requestProcedureStepService.getProcedureStep(stepId);
+        if (step == null) {
+            return new ResponseEntity<>("Procedure step not found", HttpStatus.NOT_FOUND);
+        }
+        requestProcedureStepService.updatePerformedProcedureStepStatus(step, status);
         return new ResponseEntity<>("", HttpStatus.OK);
     }
-	
+
 	/**
 	 * @param requestPostData The data for the new request procedure
 	 * @return The response entity resulting from the request processing
 	 */
 	@RequestMapping(value = "/saverequest", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+	@Authorized(ImagingConstants.PRIVILEGE_EDIT_WORKLIST)
 	@Transactional
 	public ResponseEntity<Object> saveRequestProcedure(@RequestBody Map<String, Object> requestPostData,
 													  HttpServletRequest request, HttpServletResponse response ) {
@@ -483,9 +504,15 @@ public class RequestProcedureController {
 		PatientService patientService = Context.getPatientService();
 		String patientUuid = (String) requestPostData.get("patientUuid");
 		Patient patient = patientService.getPatientByUuid(patientUuid);
+		if (patient == null) {
+			return new ResponseEntity<>("Patient not found", HttpStatus.NOT_FOUND);
+		}
 
 		OrthancConfigurationService orthancConfigurationService = Context.getService(OrthancConfigurationService.class);
 		OrthancConfiguration configuration = orthancConfigurationService.getOrthancConfiguration((Integer) requestPostData.get("configurationId"));
+		if (configuration == null) {
+			return new ResponseEntity<>("Orthanc configuration not found", HttpStatus.NOT_FOUND);
+		}
 
 		RequestProcedure newReq = new RequestProcedure();
 		newReq.setStatus("scheduled");
@@ -503,12 +530,13 @@ public class RequestProcedureController {
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
 		}
 	}
-	
+
 	/**
 	 * @param stepPostData The data for the procedure step
 	 * @return The response entity resulting from the request processing
 	 */
 	@RequestMapping(value = "/savestep", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+	@Authorized(ImagingConstants.PRIVILEGE_EDIT_WORKLIST)
 	@Transactional
 	public ResponseEntity<Object> saveRequestProcedureStep(@RequestBody Map<String, Object> stepPostData,
 													   HttpServletRequest request,
@@ -518,6 +546,9 @@ public class RequestProcedureController {
 
 		int requestId = (Integer) stepPostData.get("requestId");
 		RequestProcedure requestProcedure = requestProcedureService.getRequestProcedure(requestId);
+		if (requestProcedure == null) {
+			return new ResponseEntity<>("Request procedure not found", HttpStatus.NOT_FOUND);
+		}
 
 		RequestProcedureStep newStep = new RequestProcedureStep();
 		newStep.setRequestProcedure(requestProcedure);
@@ -541,18 +572,22 @@ public class RequestProcedureController {
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
-	
+
 	/**
 	 * @param patientUuid The patient unique ID
 	 * @return The response entity resulting from the request processing
 	 */
 	@RequestMapping(value = "/patientrequests", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	@Authorized(ImagingConstants.PRIVILEGE_EDIT_WORKLIST)
 	@Transactional
 	public ResponseEntity<Object> useRequestsByPatient(@RequestParam("patient") String patientUuid,
 													   HttpServletRequest request, HttpServletResponse response ) {
         RequestProcedureService requestProcedureService = Context.getService(RequestProcedureService.class);
         PatientService patientService = Context.getPatientService();
         Patient patient = patientService.getPatientByUuid(patientUuid);
+        if (patient == null) {
+            return new ResponseEntity<>("Patient not found", HttpStatus.NOT_FOUND);
+        }
 
         List<RequestProcedure> requests = requestProcedureService.getRequestProcedureByPatient(patient);
         List<RequestProcedureResponse> requestProcedureResponseList = new ArrayList<>();
@@ -562,12 +597,13 @@ public class RequestProcedureController {
         }
         return new ResponseEntity<>(requestProcedureResponseList, HttpStatus.OK);
     }
-	
+
 	/**
 	 * @param requestId The request procedure ID
 	 * @return The retrieved procedure step list
 	 */
 	@RequestMapping(value = "/requeststep", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	@Authorized(ImagingConstants.PRIVILEGE_EDIT_WORKLIST)
 	@Transactional
 	public ResponseEntity<Object> useProcedureStep(@RequestParam("requestId") int requestId,
 												   HttpServletRequest request,
@@ -575,17 +611,21 @@ public class RequestProcedureController {
 		RequestProcedureService requestProcedureService = Context.getService(RequestProcedureService.class);
 		RequestProcedureStepService requestProcedureStepService = Context.getService(RequestProcedureStepService.class);
 		RequestProcedure req = requestProcedureService.getRequestProcedure(requestId);
+		if (req == null) {
+			return new ResponseEntity<>("Request procedure not found", HttpStatus.NOT_FOUND);
+		}
 		List<RequestProcedureStep> steps = requestProcedureStepService.getAllStepByRequestProcedure(req);
 
 		List<ProcedureStepResponse> procedureStepResponseList = steps.stream().map(ProcedureStepResponse::createResponse).collect(Collectors.toList());
 		return new ResponseEntity<>(procedureStepResponseList, HttpStatus.OK);
 	}
-	
+
 	/**
 	 * @param requestId The request procedure ID
 	 * @return The response entity
 	 */
 	@RequestMapping(value = "/request", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
+	@Authorized(ImagingConstants.PRIVILEGE_EDIT_WORKLIST)
 	@Transactional
 	public ResponseEntity<Object> deleteRequest(@RequestParam(value="requestId") int requestId,
 											   HttpServletRequest request,
@@ -593,6 +633,9 @@ public class RequestProcedureController {
 		RequestProcedureService requestProcedureService = Context.getService(RequestProcedureService.class);
 		RequestProcedureStepService requestProcedureStepService = Context.getService(RequestProcedureStepService.class);
 		RequestProcedure requestProcedure = requestProcedureService.getRequestProcedure(requestId);
+		if (requestProcedure == null) {
+			return new ResponseEntity<>("Request procedure not found", HttpStatus.NOT_FOUND);
+		}
 
 		List<RequestProcedureStep> stepList = requestProcedureStepService.getAllStepByRequestProcedure(requestProcedure);
 		if (!stepList.isEmpty()) {
@@ -611,13 +654,14 @@ public class RequestProcedureController {
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
-	
+
 	/**
 	 * @param stepId The procedure step of the request
 	 * @param request The request of procedure
 	 * @return The response entity
 	 */
 	@RequestMapping(value = "/requeststep", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
+	@Authorized(ImagingConstants.PRIVILEGE_EDIT_WORKLIST)
 	@Transactional
 	public ResponseEntity<Object> deleteProcedureStep(@RequestParam(value="stepId") int stepId,
 											   HttpServletRequest request,
@@ -625,6 +669,9 @@ public class RequestProcedureController {
 
 		RequestProcedureStepService requestProcedureStepService = Context.getService(RequestProcedureStepService.class);
 		RequestProcedureStep step = requestProcedureStepService.getProcedureStep(stepId);
+		if (step == null) {
+			return new ResponseEntity<>("Procedure step not found", HttpStatus.NOT_FOUND);
+		}
 
 		try {
 			requestProcedureStepService.deleteProcedureStep(step);

@@ -230,6 +230,39 @@
         </insert>
     </changeSet>
 
+    <changeSet id="408a-add-manage-orthanc-configuration-privilege" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM privilege WHERE privilege = 'Task: Manager Orthanc Configuration'</sqlCheck>
+        </preConditions>
+        <comment>Add legacy imaging privilege before role grants</comment>
+        <insert tableName="privilege">
+            <column name="privilege" value="Task: Manager Orthanc Configuration"/>
+            <column name="description" value="Able to add, delete configuration"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="408b-add-modify-image-data-privilege" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM privilege WHERE privilege = 'Task: Modify Image Data'</sqlCheck>
+        </preConditions>
+        <comment>Add legacy imaging privilege before role grants</comment>
+        <insert tableName="privilege">
+            <column name="privilege" value="Task: Modify Image Data"/>
+            <column name="description" value="Able to add, delete image data"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="408c-add-edit-worklist-privilege" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM privilege WHERE privilege = 'Task: Edit Worklist'</sqlCheck>
+        </preConditions>
+        <comment>Add legacy imaging privilege before role grants</comment>
+        <insert tableName="privilege">
+            <column name="privilege" value="Task: Edit Worklist"/>
+            <column name="description" value="Able to add, delete worklist"/>
+        </insert>
+    </changeSet>
+
     <changeSet id="409-add-imaging-manager-role" author="codex">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT COUNT(*) FROM role WHERE role = 'Imaging Manager'</sqlCheck>

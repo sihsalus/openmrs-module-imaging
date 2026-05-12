@@ -183,6 +183,7 @@
         <insert tableName="privilege">
             <column name="privilege" value="Task: View Image Data"/>
             <column name="description" value="Able to view image metadata and previews"/>
+            <column name="uuid" value="4b78f720-1bdb-4b7d-9471-2cc15d7e8db2"/>
         </insert>
     </changeSet>
 
@@ -194,6 +195,7 @@
         <insert tableName="privilege">
             <column name="privilege" value="Task: Upload Image Data"/>
             <column name="description" value="Able to upload image data to Orthanc"/>
+            <column name="uuid" value="36f7d786-0fbb-480f-b8cc-6b9558a542db"/>
         </insert>
     </changeSet>
 
@@ -205,6 +207,7 @@
         <insert tableName="privilege">
             <column name="privilege" value="Task: Delete Image Data"/>
             <column name="description" value="Able to delete image data from OpenMRS and Orthanc"/>
+            <column name="uuid" value="61e60e4d-7a78-497f-85f7-d2916e4a1625"/>
         </insert>
     </changeSet>
 
@@ -216,6 +219,7 @@
         <insert tableName="privilege">
             <column name="privilege" value="Task: Link Image Studies"/>
             <column name="description" value="Able to link image studies to OpenMRS patients"/>
+            <column name="uuid" value="80f351a6-a4f4-4f16-96e0-1e1a9915f4f7"/>
         </insert>
     </changeSet>
 
@@ -227,6 +231,7 @@
         <insert tableName="privilege">
             <column name="privilege" value="Task: Receive Orthanc Updates"/>
             <column name="description" value="Able to receive modality and Orthanc worklist status updates"/>
+            <column name="uuid" value="fb681ddc-7ccc-4f11-bf54-bde13218378b"/>
         </insert>
     </changeSet>
 
@@ -238,6 +243,7 @@
         <insert tableName="privilege">
             <column name="privilege" value="Task: Manager Orthanc Configuration"/>
             <column name="description" value="Able to add, delete configuration"/>
+            <column name="uuid" value="59fc0136-f109-49f5-a33e-9f15099554c9"/>
         </insert>
     </changeSet>
 
@@ -249,6 +255,7 @@
         <insert tableName="privilege">
             <column name="privilege" value="Task: Modify Image Data"/>
             <column name="description" value="Able to add, delete image data"/>
+            <column name="uuid" value="e34432c4-f750-4d6d-8f62-78c9cf367b83"/>
         </insert>
     </changeSet>
 
@@ -260,6 +267,7 @@
         <insert tableName="privilege">
             <column name="privilege" value="Task: Edit Worklist"/>
             <column name="description" value="Able to add, delete worklist"/>
+            <column name="uuid" value="1118c5c4-5f99-4287-ae9d-2ba043432090"/>
         </insert>
     </changeSet>
 

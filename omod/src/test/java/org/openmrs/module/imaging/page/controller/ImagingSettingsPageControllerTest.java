@@ -29,7 +29,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
@@ -52,15 +51,6 @@ public class ImagingSettingsPageControllerTest extends BaseModuleWebContextSensi
 		
 		private ByteArrayServletOutputStream(ByteArrayOutputStream delegate) {
 			this.delegate = delegate;
-		}
-		
-		@Override
-		public boolean isReady() {
-			return true;
-		}
-		
-		@Override
-		public void setWriteListener(WriteListener writeListener) {
 		}
 		
 		@Override

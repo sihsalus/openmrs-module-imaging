@@ -22,7 +22,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.Base64;
 
 import static org.junit.Assert.*;
@@ -84,22 +83,15 @@ public class OrthancHttpClientTest {
     }
 	
 	@Test
-	public void testIsOrthancReachable_success() throws IOException {
+	public void testIsOrthancReachable_unreachableServer() throws IOException {
 		OrthancConfiguration config = mock(OrthancConfiguration.class);
-		when(config.getOrthancBaseUrl()).thenReturn("http://localhost:8052");
+		when(config.getOrthancBaseUrl()).thenReturn("http://127.0.0.1:1");
 		when(config.getOrthancProxyUrl()).thenReturn("");
 		when(config.getOrthancPassword()).thenReturn("orthanc");
 		when(config.getOrthancUsername()).thenReturn("orthanc");
-		
-		HttpURLConnection con = mock(HttpURLConnection.class);
-		when(con.getResponseCode()).thenReturn(200);
-		
-		URL url = new URL("http://localhost:8052/system");
-		HttpURLConnection realConnection = (HttpURLConnection) url.openConnection();
-		realConnection.disconnect();
-		
+
 		boolean reachable = httpClient.isOrthancReachable(config);
-		assertTrue(reachable);
+		assertFalse(reachable);
 	}
 	
 	@Test

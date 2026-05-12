@@ -8,19 +8,36 @@
         <version>1.1.0</version>
     </parent>
 
-    <groupId>org.openmrs.module</groupId>
+    <groupId>io.github.proyecto-santaclotilde</groupId>
     <artifactId>imaging</artifactId>
     <version>1.1.6</version>
     <packaging>pom</packaging>
-    <name>Imaging</name>
-    <description>connection to Orthanc</description>
+    <name>Imaging OpenMRS Module</name>
+    <description>OpenMRS module for connecting OpenMRS with Orthanc imaging workflows.</description>
 
-    <url>https://wiki.openmrs.org/x/FQ4z</url>
+    <url>https://github.com/sihsalus/openmrs-module-imaging</url>
+
+    <licenses>
+        <license>
+            <name>OpenMRS Public License 1.0</name>
+            <url>https://openmrs.org/license/</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>sihsalus</id>
+            <name>SIHSALUS</name>
+            <organization>Proyecto Santa Clotilde</organization>
+            <organizationUrl>https://github.com/sihsalus</organizationUrl>
+        </developer>
+    </developers>
 
     <scm>
-        <connection>scm:git:git@github.com:openmrs/openmrs-module-imaging.git</connection>
-        <developerConnection>scm:git:git@github.com:openmrs/openmrs-module-imaging.git</developerConnection>
-        <url>https://github.com/openmrs/openmrs-module-imaging/</url>
+        <connection>scm:git:https://github.com/sihsalus/openmrs-module-imaging.git</connection>
+        <developerConnection>scm:git:https://github.com/sihsalus/openmrs-module-imaging.git</developerConnection>
+        <url>https://github.com/sihsalus/openmrs-module-imaging</url>
     </scm>
 
     <modules>
@@ -288,7 +305,70 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>3.1.2</version>
+                <configuration>
+                    <skip>false</skip>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.6.3</version>
+                        <configuration>
+                            <doclint>none</doclint>
+                            <failOnError>false</failOnError>
+                            <source>8</source>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.2.7</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.10.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>true</autoPublish>
+                            <waitUntil>validated</waitUntil>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
     <repositories>
         <repository>
@@ -316,7 +396,12 @@
 
     <properties>
         <openmrsPlatformVersion>2.5.9</openmrsPlatformVersion>
-    <webservicesRestModuleVersion>[2.7.0,)</webservicesRestModuleVersion>
+        <webservicesRestModuleVersion>2.48.0</webservicesRestModuleVersion>
+        <appframeworkVersion>2.18.0</appframeworkVersion>
+        <uiframeworkVersion>4.0.0</uiframeworkVersion>
+        <uicommonsModuleVersion>2.26.0</uicommonsModuleVersion>
+        <appuiVersion>1.18.0</appuiVersion>
+        <legacyuiVersion>2.1.0</legacyuiVersion>
         <openMRSVersion>2.5.9</openMRSVersion>
         <junitVersion>4.13.2</junitVersion>
         <hamcrestVersion>3.0</hamcrestVersion>

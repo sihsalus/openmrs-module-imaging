@@ -44,8 +44,33 @@
 	</privilege>
 
 	<privilege>
+		<name>Task: View Image Data</name>
+		<description>Able to view image metadata and previews</description>
+	</privilege>
+
+	<privilege>
+		<name>Task: Upload Image Data</name>
+		<description>Able to upload image data to Orthanc</description>
+	</privilege>
+
+	<privilege>
+		<name>Task: Delete Image Data</name>
+		<description>Able to delete image data from OpenMRS and Orthanc</description>
+	</privilege>
+
+	<privilege>
+		<name>Task: Link Image Studies</name>
+		<description>Able to link image studies to OpenMRS patients</description>
+	</privilege>
+
+	<privilege>
 		<name>Task: Edit Worklist</name>
 		<description>Able to add, delete worklist</description>
+	</privilege>
+
+	<privilege>
+		<name>Task: Receive Orthanc Updates</name>
+		<description>Able to receive modality and Orthanc worklist status updates</description>
 	</privilege>
 
 	<!-- Required Global Properties -->

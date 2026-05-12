@@ -230,4 +230,96 @@
         </insert>
     </changeSet>
 
+    <changeSet id="409-add-imaging-manager-role" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM role WHERE role = 'Imaging Manager'</sqlCheck>
+        </preConditions>
+        <comment>Add role that groups imaging module privileges</comment>
+        <insert tableName="role">
+            <column name="role" value="Imaging Manager"/>
+            <column name="description" value="Can manage imaging, Orthanc integration, and worklist workflows"/>
+            <column name="uuid" value="b2b653b4-071e-43d4-bb26-d42cbf5929c1"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="410-grant-manage-orthanc-to-imaging-manager" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM role_privilege WHERE role = 'Imaging Manager' AND privilege = 'Task: Manager Orthanc Configuration'</sqlCheck>
+        </preConditions>
+        <insert tableName="role_privilege">
+            <column name="role" value="Imaging Manager"/>
+            <column name="privilege" value="Task: Manager Orthanc Configuration"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="411-grant-modify-image-data-to-imaging-manager" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM role_privilege WHERE role = 'Imaging Manager' AND privilege = 'Task: Modify Image Data'</sqlCheck>
+        </preConditions>
+        <insert tableName="role_privilege">
+            <column name="role" value="Imaging Manager"/>
+            <column name="privilege" value="Task: Modify Image Data"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="412-grant-view-image-data-to-imaging-manager" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM role_privilege WHERE role = 'Imaging Manager' AND privilege = 'Task: View Image Data'</sqlCheck>
+        </preConditions>
+        <insert tableName="role_privilege">
+            <column name="role" value="Imaging Manager"/>
+            <column name="privilege" value="Task: View Image Data"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="413-grant-upload-image-data-to-imaging-manager" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM role_privilege WHERE role = 'Imaging Manager' AND privilege = 'Task: Upload Image Data'</sqlCheck>
+        </preConditions>
+        <insert tableName="role_privilege">
+            <column name="role" value="Imaging Manager"/>
+            <column name="privilege" value="Task: Upload Image Data"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="414-grant-delete-image-data-to-imaging-manager" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM role_privilege WHERE role = 'Imaging Manager' AND privilege = 'Task: Delete Image Data'</sqlCheck>
+        </preConditions>
+        <insert tableName="role_privilege">
+            <column name="role" value="Imaging Manager"/>
+            <column name="privilege" value="Task: Delete Image Data"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="415-grant-link-image-studies-to-imaging-manager" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM role_privilege WHERE role = 'Imaging Manager' AND privilege = 'Task: Link Image Studies'</sqlCheck>
+        </preConditions>
+        <insert tableName="role_privilege">
+            <column name="role" value="Imaging Manager"/>
+            <column name="privilege" value="Task: Link Image Studies"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="416-grant-edit-worklist-to-imaging-manager" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM role_privilege WHERE role = 'Imaging Manager' AND privilege = 'Task: Edit Worklist'</sqlCheck>
+        </preConditions>
+        <insert tableName="role_privilege">
+            <column name="role" value="Imaging Manager"/>
+            <column name="privilege" value="Task: Edit Worklist"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="417-grant-receive-orthanc-updates-to-imaging-manager" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM role_privilege WHERE role = 'Imaging Manager' AND privilege = 'Task: Receive Orthanc Updates'</sqlCheck>
+        </preConditions>
+        <insert tableName="role_privilege">
+            <column name="role" value="Imaging Manager"/>
+            <column name="privilege" value="Task: Receive Orthanc Updates"/>
+        </insert>
+    </changeSet>
+
 </databaseChangeLog>

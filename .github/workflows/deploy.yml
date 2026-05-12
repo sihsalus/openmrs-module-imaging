@@ -17,6 +17,7 @@ on:
 jobs:
   compile:
     runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch'
     permissions:
       contents: read
 
@@ -134,7 +135,50 @@ jobs:
           CENTRAL_DEPLOYMENT_ID: ${{ inputs.central_deployment_id }}
         run: |
           AUTH_TOKEN=$(printf "%s:%s" "$CENTRAL_USERNAME" "$CENTRAL_PASSWORD" | base64 -w0)
-          curl --fail --show-error --silent \
+          STATUS_RESPONSE=$(curl --fail --show-error --silent \
             --request POST \
             --header "Authorization: Bearer ${AUTH_TOKEN}" \
-            "https://central.sonatype.com/api/v1/publisher/deployment/${CENTRAL_DEPLOYMENT_ID}"
+            "https://central.sonatype.com/api/v1/publisher/status?id=${CENTRAL_DEPLOYMENT_ID}")
+          echo "$STATUS_RESPONSE"
+          DEPLOYMENT_STATE=$(echo "$STATUS_RESPONSE" | jq -r '.deploymentState')
+
+          if [ "$DEPLOYMENT_STATE" = "PUBLISHED" ]; then
+            echo "Deployment is already published."
+            exit 0
+          fi
+
+          if [ "$DEPLOYMENT_STATE" != "VALIDATED" ]; then
+            echo "Deployment is not ready to publish; current state is ${DEPLOYMENT_STATE}."
+            exit 1
+          fi
+
+          HTTP_STATUS=$(curl --show-error --silent \
+            --output publish-response.txt \
+            --write-out "%{http_code}" \
+            --request POST \
+            --header "Authorization: Bearer ${AUTH_TOKEN}" \
+            "https://central.sonatype.com/api/v1/publisher/deployment/${CENTRAL_DEPLOYMENT_ID}")
+          cat publish-response.txt
+          if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
+            echo "Publish request failed with HTTP ${HTTP_STATUS}."
+            exit 1
+          fi
+
+          for attempt in $(seq 1 60); do
+            STATUS_RESPONSE=$(curl --fail --show-error --silent \
+              --request POST \
+              --header "Authorization: Bearer ${AUTH_TOKEN}" \
+              "https://central.sonatype.com/api/v1/publisher/status?id=${CENTRAL_DEPLOYMENT_ID}")
+            echo "$STATUS_RESPONSE"
+            DEPLOYMENT_STATE=$(echo "$STATUS_RESPONSE" | jq -r '.deploymentState')
+            if [ "$DEPLOYMENT_STATE" = "PUBLISHED" ]; then
+              exit 0
+            fi
+            if [ "$DEPLOYMENT_STATE" = "FAILED" ]; then
+              exit 1
+            fi
+            sleep 30
+          done
+
+          echo "Timed out waiting for deployment to publish."
+          exit 1

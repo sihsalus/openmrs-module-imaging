@@ -21,6 +21,8 @@
             ID="1"
             studyInstanceUID="testInstanceUID888"
             orthancStudyUID="orthancUID888"
+            linkStatus="0"
+            comparisonResult='{"score":50,"differences":[{"name":"PatientName","fromOpenMRS":"AA","fromOrthanc":"BB"}]}'
             patientName="UID888_patient"
             studyDate="2025-07-10"
             studyTime="14:35:00"
@@ -33,6 +35,8 @@
             ID="2"
             studyInstanceUID="testInstanceUID999"
             orthancStudyUID="orthancUID999"
+            linkStatus="0"
+            comparisonResult='{"score":50,"differences":[{"name":"PatientName","fromOpenMRS":"AA","fromOrthanc":"BB"}]}'
             patientName="UID999_patient"
             studyDate="2025-07-17"
             studyTime="18:35:00"
@@ -45,6 +49,8 @@
             ID="3"
             studyInstanceUID="testInstanceUID333"
             orthancStudyUID="orthancUID333"
+            linkStatus="0"
+            comparisonResult='{"score":50,"differences":[{"name":"PatientName","fromOpenMRS":"AA","fromOrthanc":"BB"}]}'
             patientName="UID333_requestProcedure"
             studyDate="2025-07-14"
             studyTime="14:35:00"

@@ -17,6 +17,8 @@ import org.openmrs.BaseOpenmrsData;
 import org.openmrs.Patient;
 import org.openmrs.module.imaging.OrthancConfiguration;
 
+import javax.persistence.Column;
+
 public class DicomStudy extends BaseOpenmrsData implements java.io.Serializable {
 	
 	private static final long serialVersionUID = 1;
@@ -26,6 +28,13 @@ public class DicomStudy extends BaseOpenmrsData implements java.io.Serializable 
 	private String studyInstanceUID;
 	
 	private String orthancStudyUID;
+	
+	private Integer linkStatus;
+	
+	private Integer matchingScore;
+	
+	@Column(name = "comparisonResult", length = 2000)
+	private String comparisonResult;
 	
 	private Patient mrsPatient;
 	
@@ -44,10 +53,14 @@ public class DicomStudy extends BaseOpenmrsData implements java.io.Serializable 
 	public DicomStudy() {
 	}
 	
-	public DicomStudy(String studyInstanceUID, String orthancStudyUID, Patient patient, OrthancConfiguration config,
-	    String patientName, String studyDate, String studyTime, String studyDescription, String gender) {
+	public DicomStudy(String studyInstanceUID, String orthancStudyUID, int linkStatus, int matchingScore,
+	    String comparisonResult, Patient patient, OrthancConfiguration config, String patientName, String studyDate,
+	    String studyTime, String studyDescription, String gender) {
 		this.studyInstanceUID = studyInstanceUID;
 		this.orthancStudyUID = orthancStudyUID;
+		this.linkStatus = linkStatus;
+		this.matchingScore = matchingScore;
+		this.comparisonResult = comparisonResult;
 		this.mrsPatient = patient;
 		this.orthancConfiguration = config;
 		this.patientName = patientName;
@@ -74,6 +87,30 @@ public class DicomStudy extends BaseOpenmrsData implements java.io.Serializable 
 	
 	public void setStudyInstanceUID(String studyInstanceUID) {
 		this.studyInstanceUID = studyInstanceUID;
+	}
+	
+	public void setLinkStatus(int linkStatus) {
+		this.linkStatus = linkStatus;
+	}
+	
+	public int getLinkStatus() {
+		return linkStatus;
+	}
+	
+	public void setMatchingScore(Integer matchingScore) {
+		this.matchingScore = matchingScore;
+	}
+	
+	public Integer getMatchingScore() {
+		return matchingScore;
+	}
+	
+	public void setComparisonResult(String comparisonResult) {
+		this.comparisonResult = comparisonResult;
+	}
+	
+	public String getComparisonResult() {
+		return comparisonResult;
 	}
 	
 	public String getOrthancStudyUID() {

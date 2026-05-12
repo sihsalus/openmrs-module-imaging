@@ -85,4 +85,9 @@ public class RequestProcedureStepServiceImpl extends BaseOpenmrsService implemen
 		dao.update(requestProcedureStep);
 	}
 	
+	@Override
+	public void updatePerformedProcedureStepStatus(RequestProcedureStep step, String newStatus) {
+		dao.updatePerformedProcedureStepStatus(step, newStatus);
+	}
+	
 }

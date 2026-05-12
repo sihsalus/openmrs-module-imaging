@@ -29,7 +29,7 @@ from utils import (
     Accession_Number,
     Study_Instance_UID,
     Request_Description,
-    Performed_Procedure_Step_ID,
+    Scheduled_Procedure_Step_ID,
     Given_Name,
     Family_Name,
     Modality,
@@ -163,7 +163,7 @@ def run_test(run_args):
             modality=Modality,
             series_count=2,
             instances_per_series=3,
-            performed_procedure_step_id=Performed_Procedure_Step_ID
+            scheduled_procedure_step_id=Scheduled_Procedure_Step_ID
         )
 
         # --- Save one instance as example ----

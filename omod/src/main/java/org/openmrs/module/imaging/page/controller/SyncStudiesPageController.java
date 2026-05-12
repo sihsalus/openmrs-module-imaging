@@ -66,11 +66,14 @@ public class SyncStudiesPageController {
 	        @RequestParam(value = "studyId") int studyId, boolean isChecked) {
 		DicomStudyService dicomStudyService = Context.getService(DicomStudyService.class);
 		String message;
+		DicomStudy study = dicomStudyService.getDicomStudy(studyId);
 		if (isChecked) {
-			dicomStudyService.setPatient(dicomStudyService.getDicomStudy(studyId), patient);
+			dicomStudyService.updateLinkStatus(study, 0);
+			dicomStudyService.setPatient(study, patient);
 			message = "Study assigned to patient";
 		} else {
-			dicomStudyService.setPatient(dicomStudyService.getDicomStudy(studyId), null);
+			dicomStudyService.updateLinkStatus(study, -1);
+			dicomStudyService.setPatient(study, null);
 			message = "Study assignment removed";
 		}
 		

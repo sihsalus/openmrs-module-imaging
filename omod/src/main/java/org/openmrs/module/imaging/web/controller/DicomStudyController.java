@@ -8,7 +8,6 @@
  * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
  * License for the specific language governing rights and limitations
  * under the License.
- *
  * Copyright (C) OpenMRS, LLC.  All Rights Reserved.
  */
 package org.openmrs.module.imaging.web.controller;
@@ -91,9 +90,16 @@ public class DicomStudyController {
         studiesWithScore.studies = DicomStudyResponse.createResponse(studies);
         studiesWithScore.scores = new HashMap<String,Integer>();
         for (DicomStudy study : studies) {
+            String dbName = ((patient.getGivenName() != null) ? patient.getGivenName().trim() : "")
+                    + " "
+                    + ((patient.getFamilyName() != null) ? patient.getFamilyName().trim() : "");
+
+            String studyName = (study.getPatientName() != null) ? study.getPatientName().trim() : "";
+            dbName = dbName.toLowerCase(Locale.ROOT);
+            studyName = studyName.toLowerCase(Locale.ROOT);
+
             // FuzzySearch by https://github.com/xdrop/fuzzywuzzy?tab=readme-ov-file
-            int score = FuzzySearch.tokenSetRatio(patient.getGivenName() + " " + patient.getFamilyName(),
-                    study.getPatientName());
+            int score = FuzzySearch.tokenSetRatio(dbName, studyName);
             studiesWithScore.scores.put(study.getStudyInstanceUID(), score);
         }
 
@@ -166,7 +172,6 @@ public class DicomStudyController {
 	/**
 	 * @param file The DICOM study files that should be uploaded to the Orthanc server."
 	 * @param configurationId The configuration ID
-	 * @throws IOException
 	 */
 	@RequestMapping(value = "/instances", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional
@@ -229,9 +234,30 @@ public class DicomStudyController {
             return new ResponseEntity<>("studyId or patient UUID is missing", HttpStatus.BAD_REQUEST);
         }
         if (isAssign) {
-            study.setMrsPatient(patient);
+            dicomStudyService.setPatient(study, patient);
+            dicomStudyService.updateLinkStatus(study, 0);
         } else {
-            study.setMrsPatient(null);
+            dicomStudyService.setPatient(study,null);
+            dicomStudyService.updateLinkStatus(study, -1);
+        }
+        return new ResponseEntity<>("", HttpStatus.OK);
+    }
+	
+	@RequestMapping(value="/updatestudyLinkStatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Transactional
+    public ResponseEntity<Object> updateStudyLinkStatus(
+            @RequestParam(value="studyId") int studyId,
+            @RequestParam(value="linkStatus") int linkStatus,
+            HttpServletRequest request,
+            HttpServletResponse response){
+
+        DicomStudyService dicomStudyService = Context.getService(DicomStudyService.class);
+        DicomStudy study = dicomStudyService.getDicomStudy(studyId);
+
+        if (studyId <= 0) {
+            return new ResponseEntity<>("studyId is missing", HttpStatus.BAD_REQUEST);
+        } else {
+            dicomStudyService.updateLinkStatus(study, linkStatus);
         }
         return new ResponseEntity<>("", HttpStatus.OK);
     }

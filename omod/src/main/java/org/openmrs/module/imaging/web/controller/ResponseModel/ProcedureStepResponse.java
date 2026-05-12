@@ -19,13 +19,15 @@ public class ProcedureStepResponse {
 	
 	private Integer id;
 	
+	private Integer stepNumber;
+	
 	private Integer requestProcedureId;
 	
 	private String modality;
 	
 	private String aetTitle;
 	
-	private String scheduledReferringPhysician;
+	private String scheduledPerformingPhysician;
 	
 	private String requestedProcedureDescription;
 	
@@ -45,12 +47,12 @@ public class ProcedureStepResponse {
 	 */
 	public static ProcedureStepResponse createResponse(RequestProcedureStep step) {
 		ProcedureStepResponse response = new ProcedureStepResponse();
-		
+		response.setStepNumber(step.getStepNumber());
 		response.setId(step.getId());
 		response.setRequestProcedureId(step.getRequestProcedure().getId());
 		response.setModality(step.getModality());
 		response.setAetTitle(step.getAetTitle());
-		response.setScheduledReferringPhysician(step.getScheduledReferringPhysician());
+		response.setScheduledPerformingPhysician(step.getScheduledPerformingPhysician());
 		response.setRequestedProcedureDescription(step.getRequestedProcedureDescription());
 		response.setStepStartDate(step.getStepStartDate());
 		response.setStepStartTime(step.getStepStartTime());
@@ -62,6 +64,14 @@ public class ProcedureStepResponse {
 	
 	public Integer getId() {
 		return id;
+	}
+	
+	public void setStepNumber(Integer stepNumber) {
+		this.stepNumber = stepNumber;
+	}
+	
+	public Integer getStepNumber() {
+		return stepNumber;
 	}
 	
 	public void setId(Integer id) {
@@ -84,12 +94,12 @@ public class ProcedureStepResponse {
 		this.aetTitle = aetTitle;
 	}
 	
-	public String getScheduledReferringPhysician() {
-		return scheduledReferringPhysician;
+	public String getScheduledPerformingPhysician() {
+		return scheduledPerformingPhysician;
 	}
 	
-	public void setScheduledReferringPhysician(String scheduledReferringPhysician) {
-		this.scheduledReferringPhysician = scheduledReferringPhysician;
+	public void setScheduledPerformingPhysician(String scheduledPerformingPhysician) {
+		this.scheduledPerformingPhysician = scheduledPerformingPhysician;
 	}
 	
 	public String getRequestedProcedureDescription() {

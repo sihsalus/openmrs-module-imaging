@@ -80,6 +80,25 @@ ${ ui.includeFragment("uicommons", "infoAndErrorMessage")}
         const accessionNumber = formattedDate + randomPart;
         document.getElementById("accessionNumber").value = accessionNumber;
     }
+
+    function onUpdatePerformedStepStatus(stepId, value, patient) {
+        if (!stepId) return;
+
+        if (value === "completed" || value === "rejected") {
+            togglePopupUpdateProcedureStepStatus(stepId, value, patient);
+        }
+    }
+
+    function togglePopupUpdateProcedureStepStatus(stepId, value, patient) {
+        const overlay = document.getElementById('popupOverlayUpdateStepStatus');
+        if (overlay) {
+            overlay.classList.toggle('show');
+        }
+        document.updateStepStatusForm.action = "/${contextPath}/module/imaging/updateStepStatus.form?stepId="
+                                               + stepId
+                                               + "&status=" + value
+                                               + "&patientId=" + patient;
+    }
 </script>
 
 <div>
@@ -136,7 +155,7 @@ ${ ui.includeFragment("uicommons", "infoAndErrorMessage")}
                     </td>
                  </tr>
                  <!-- Hidden row for item IDs -->
-                 <tr id="step-${requestProcedure.id}" class="hidden-step" style="display: none;">
+                 <tr id="step-${requestProcedure.id}" class="hidden-step" style="display: show;">
                      <td colspan="6">
                         <% requestProcedureMap[requestProcedure].each { step ->  %>
                            <div class="stepDiv">
@@ -165,7 +184,7 @@ ${ ui.includeFragment("uicommons", "infoAndErrorMessage")}
                                         </tr>
                                         <tr>
                                           <td>Referring Physician:</td>
-                                          <td>${step.scheduledReferringPhysician}</td>
+                                          <td>${step.scheduledPerformingPhysician}</td>
                                         </tr>
                                         <tr>
                                            <td>Requested Procedure Description:</td>
@@ -181,7 +200,13 @@ ${ ui.includeFragment("uicommons", "infoAndErrorMessage")}
                                         </tr>
                                         <tr>
                                            <td>Step Status:</td>
-                                           <td>${step.performedProcedureStepStatus}</td>
+                                           <td><select id="performedProcedureStepStatus"
+                                                        onchange="onUpdatePerformedStepStatus('${step.id}', this.value, '${patient.id}')">
+                                                 <option value="scheduled" ${step.performedProcedureStepStatus == 'scheduled' ? 'selected' : ''} disabled>scheduled</option>
+                                                 <option value="completed" ${step.performedProcedureStepStatus == 'completed' ? 'selected' : ''}>completed</option>
+                                                 <option value="rejected" ${step.performedProcedureStepStatus == 'rejected' ? 'selected' : ''}>rejected</option>
+                                                </select>
+                                           </td>
                                         </tr>
                                         <tr>
                                            <td>Station Name:</td>
@@ -242,7 +267,7 @@ ${ ui.includeFragment("uicommons", "infoAndErrorMessage")}
                     </tr>
                     <tr>
                         <td>Referring Physician</td>
-                        <td><input class="rpInput" type="text" name="scheduledReferringPhysician" id="scheduledReferringPhysician" required></td>
+                        <td><input class="rpInput" type="text" name="scheduledPerformingPhysician" id="scheduledPerformingPhysician" required></td>
                     </tr>
                     <tr>
                         <td>Description</td>
@@ -338,7 +363,7 @@ ${ ui.includeFragment("uicommons", "infoAndErrorMessage")}
 </div>
 
 <div id="popupOverlayDeleteRequest" class="overlay-container">
-    <div class="popup-box" style="width: 65%;">
+    <div class="popup-box" style="width: 70%;">
         <h2>Delete Request</h2>
         <form name="deleteRequestForm" class="form-container" method="POST">
             <h2 id="deleteRequestMessage">${ ui.message("imaging.deleteRequest.message") }</h3>
@@ -351,13 +376,27 @@ ${ ui.includeFragment("uicommons", "infoAndErrorMessage")}
 </div>
 
 <div id="popupOverlayDeleteProcedureStep" class="overlay-container">
-    <div class="popup-box" style="width: 65%;">
+    <div class="popup-box" style="width: 70%;">
         <h2>Delete procedure step</h2>
         <form name="deleteProcedureStepForm" class="form-container" method="POST">
             <h2 id="deleteProcedureStepMessage">${ ui.message("imaging.deleteProcedureStep.message") }</h3>
             <div class="popup-box-btn" style="margin-top: 40px;">
                 <button class="btn-submit" type="submit">${ ui.message("imaging.action.delete") }</button>
                 <button class="btn-close-popup" type="button" onclick="togglePopupDeleteProcedureStep()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="popupOverlayUpdateStepStatus" class="overlay-container">
+    <div class="popup-box" style="width: 70%">
+        <h2>Update procedure step</h2>
+        <form name="updateStepStatusForm" class="form-container" method="POST">
+            <h2 id="updateStepStatusMessage">Are you sure you want to change this procedure step?</h2>
+            <h3 id="updateStepStatusNotice" style="color: #ff8c00">You need to create a new procedure step to renew the rejected step!</h3>
+            <div class="popup-box-btn" style="margin-top: 40px;">
+                <button class="btn-submit" type="submit">Submit</button>
+                <button class="btn-close-popup" type="button" onclick="togglePopupUpdateProcedureStepStatus()">Cancel</button>
             </div>
         </form>
     </div>

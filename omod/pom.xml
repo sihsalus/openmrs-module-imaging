@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.openmrs.module</groupId>
 		<artifactId>imaging</artifactId>
-		<version>1.1.5-SNAPSHOT</version>
+		<version>1.1.6</version>
 	</parent>
 
 	<artifactId>imaging-omod</artifactId>
@@ -16,7 +16,7 @@
 		<dependency>
 			<groupId>org.openmrs.module</groupId>
 			<artifactId>imaging-api</artifactId>
-			<version>1.1.5-SNAPSHOT</version>
+			<version>1.1.6</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>

@@ -33,7 +33,7 @@ from pynetdicom.sop_class import StudyRootQueryRetrieveInformationModelFind, Mod
 
 from utils import (
     Accession_Number,
-    Performed_Procedure_Step_ID,
+    Scheduled_Procedure_Step_ID,
     Modality,
     Requesting_Physician,
     Study_Description,
@@ -232,7 +232,7 @@ class OrthancClient:
             study_instance_uid: Optional[str] = None,
             series_instance_uid: Optional[str] = None,
             sop_instance_uid: Optional[str] = None,
-            performed_procedure_step_id: Optional[str] = None,
+            scheduled_procedure_step_id: Optional[str] = None,
     ) -> bytes:
 
         logger.info("Creating fake DICOM for patient '%s' (ID=%s, Modality=%s)",
@@ -285,7 +285,7 @@ class OrthancClient:
             ds.StudyTime
         )
 
-        ds.PerformedProcedureStepID = performed_procedure_step_id
+        ds.ScheduledProcedureStepID = scheduled_procedure_step_id
         ds.Rows = 32
         ds.Columns = 32
         ds.BitsAllocated = 8
@@ -316,7 +316,7 @@ class OrthancClient:
             modality: str = Modality,
             series_count: int = 2,
             instances_per_series: int = 3,
-            performed_procedure_step_id: Optional[str] = Performed_Procedure_Step_ID
+            scheduled_procedure_step_id: Optional[str] = Scheduled_Procedure_Step_ID
     ) -> Dict[str, List[bytes]]:
         """ Create a complex DICOM study with multiple series and instances."""
         logger.info(
@@ -340,7 +340,7 @@ class OrthancClient:
                     study_instance_uid=study_uid,
                     series_instance_uid=series_uid,
                     sop_instance_uid=sop_uid,
-                    performed_procedure_step_id=performed_procedure_step_id,
+                    scheduled_procedure_step_id=scheduled_procedure_step_id,
                 )
 
                 # append inside the inner loop

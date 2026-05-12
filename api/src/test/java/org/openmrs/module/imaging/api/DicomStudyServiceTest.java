@@ -1,3 +1,17 @@
+/**
+ * The contents of this file are subject to the OpenMRS Public License
+ * Version 1.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ * http://license.openmrs.org
+ *
+ * Software distributed under the License is distributed on an "AS IS"
+ * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+ * License for the specific language governing rights and limitations
+ * under the License.
+ *
+ * Copyright (C) OpenMRS, LLC.  All Rights Reserved.
+ */
+
 package org.openmrs.module.imaging.api;
 
 import org.codehaus.jackson.JsonNode;
@@ -193,6 +207,7 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		DicomStudy savedStudy = dicomStudyDao.getByStudyInstanceUID(config, "testStudyUID123");
 		assertNotNull(savedStudy);
 		assertEquals("OrthanUID123", savedStudy.getOrthancStudyUID());
+		assertEquals(0, savedStudy.getLinkStatus());
 		assertEquals("TestOrthancPatient", savedStudy.getPatientName());
 		assertEquals("Test new or update study description", savedStudy.getStudyDescription());
 	}
@@ -210,8 +225,9 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		        + "    \"Gender\": \"F\"\n" + "  }\n" + "}";
 		JsonNode studyData = objectMapper.readTree(jsonString);
 		
-		DicomStudy existingStudy = new DicomStudy("studyInstanceUID444", "orthancUID444", patient, config, "Test Imaging",
-		        "2025-07-11", "14:35:00", "CT Head without contrast", "F");
+		DicomStudy existingStudy = new DicomStudy("studyInstanceUID444", "orthancUID444", 0, 60,
+		        "{\"differences\":[], \"score\": 0}", patient, config, "Test Imaging", "2025-07-11", "14:35:00",
+		        "CT Head without contrast", "F");
 		
 		DicomStudy foundStudy = dicomStudyDao.getByStudyInstanceUID(config, existingStudy.getStudyInstanceUID());
 		assertNotNull(foundStudy);
@@ -223,6 +239,7 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		
 		DicomStudy foundUpdateStudy = dicomStudyDao.getByPatient(patient).get(1);
 		assertEquals("orthancUID123", foundUpdateStudy.getOrthancStudyUID());
+		assertEquals(0, foundUpdateStudy.getLinkStatus());
 		assertEquals("studyInstanceUID444", foundUpdateStudy.getStudyInstanceUID());
 	}
 	

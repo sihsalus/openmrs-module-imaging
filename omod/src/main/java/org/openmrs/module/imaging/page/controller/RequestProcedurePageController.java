@@ -112,6 +112,32 @@ public class RequestProcedurePageController {
 	}
 	
 	/**
+	 * Update the procedure step status
+	 * 
+	 * @param stepId: The procedure step id
+	 * @param status : The new status of the step
+	 * @param patient: The openmrs patient
+	 */
+	@RequestMapping(value = "/module/imaging/updateStepStatus.form", method = RequestMethod.POST)
+	public String updateProcedureStepStatus(RedirectAttributes redirectAttributes,
+	        @RequestParam(value = "stepId") int stepId, @RequestParam(value = "status") String status,
+	        @RequestParam(value = "patientId") Patient patient) {
+		
+		RequestProcedureStepService requestProcedureStepService = Context.getService(RequestProcedureStepService.class);
+		RequestProcedureStep step = requestProcedureStepService.getProcedureStep(stepId);
+		
+		// Save whatever user selects (completed or rejected)
+		requestProcedureStepService.updatePerformedProcedureStepStatus(step, status);
+		
+		String message = "The performed status of the procedure step has been changed to " + status;
+		
+		redirectAttributes.addAttribute("patientId", patient.getId());
+		redirectAttributes.addAttribute("message", message);
+		
+		return "redirect:/imaging/requestProcedure.page";
+	}
+	
+	/**
 	 * @param redirectAttributes The redirect attributes
 	 * @param requestProcedureId The request procedure ID
 	 * @param patient The openmrs patient
@@ -152,7 +178,7 @@ public class RequestProcedurePageController {
 	/**
 	 * @param redirectAttributes The redirect attributes
 	 * @param modality The modality of the study
-	 * @param scheduledReferringPhysician The physician who performs the step
+	 * @param scheduledPerformingPhysician The physician who performs the step
 	 * @param requestedProcedureDescription The description of the request procedure
 	 * @param stepStartDate TThe creation date of the step
 	 * @param stepStartTime The creation time of the steps
@@ -164,7 +190,7 @@ public class RequestProcedurePageController {
 	public String newProcedureStep(RedirectAttributes redirectAttributes,
 	        @RequestParam(value = "requestProcedureId") int requestProcedureId,
 	        @RequestParam(value = "modality") String modality, @RequestParam(value = "aetTitle") String aetTitle,
-	        @RequestParam(value = "scheduledReferringPhysician") String scheduledReferringPhysician,
+	        @RequestParam(value = "scheduledPerformingPhysician") String scheduledPerformingPhysician,
 	        @RequestParam(value = "requestedProcedureDescription") String requestedProcedureDescription,
 	        @RequestParam(value = "stepStartDate") String stepStartDate,
 	        @RequestParam(value = "stepStartTime") String stepStartTime,
@@ -183,7 +209,7 @@ public class RequestProcedurePageController {
 				step.setRequestProcedure(requestProcedure);
 				step.setModality(modality);
 				step.setAetTitle(aetTitle);
-				step.setScheduledReferringPhysician(scheduledReferringPhysician);
+				step.setScheduledPerformingPhysician(scheduledPerformingPhysician);
 				step.setRequestedProcedureDescription(requestedProcedureDescription);
 				step.setStepStartDate(stepStartDate);
 				step.setStepStartTime(stepStartTime);

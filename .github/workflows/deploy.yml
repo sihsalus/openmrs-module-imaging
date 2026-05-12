@@ -1,6 +1,12 @@
 name: Unit Tests + Publish Maven Central
 
 on:
+  workflow_dispatch:
+    inputs:
+      central_deployment_id:
+        description: "Validated Central deployment ID to publish"
+        required: false
+        type: string
   pull_request:
     branches:
       - main
@@ -42,7 +48,8 @@ jobs:
     needs: compile
     if: >-
       github.event_name == 'push' &&
-      github.ref == 'refs/heads/main'
+      github.ref == 'refs/heads/main' &&
+      !contains(github.event.head_commit.message, '[skip publish]')
     permissions:
       contents: read
       pull-requests: read
@@ -110,3 +117,24 @@ jobs:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+  publish-validated-deployment:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.central_deployment_id != ''
+    permissions:
+      contents: read
+
+    steps:
+      - name: Publish validated Central deployment
+        env:
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          CENTRAL_DEPLOYMENT_ID: ${{ inputs.central_deployment_id }}
+        run: |
+          AUTH_TOKEN=$(printf "%s:%s" "$CENTRAL_USERNAME" "$CENTRAL_PASSWORD" | base64 -w0)
+          curl --fail --show-error --silent \
+            --request POST \
+            --header "Authorization: Bearer ${AUTH_TOKEN}" \
+            "https://central.sonatype.com/api/v1/publisher/deployment/${CENTRAL_DEPLOYMENT_ID}"

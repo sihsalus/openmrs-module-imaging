@@ -10,7 +10,7 @@
 
     <groupId>io.github.proyecto-santaclotilde</groupId>
     <artifactId>imaging</artifactId>
-    <version>1.1.6</version>
+    <version>1.1.7</version>
     <packaging>pom</packaging>
     <name>Imaging OpenMRS Module</name>
     <description>OpenMRS module for connecting OpenMRS with Orthanc imaging workflows.</description>
@@ -397,11 +397,6 @@
     <properties>
         <openmrsPlatformVersion>2.5.9</openmrsPlatformVersion>
         <webservicesRestModuleVersion>2.48.0</webservicesRestModuleVersion>
-        <appframeworkVersion>2.18.0</appframeworkVersion>
-        <uiframeworkVersion>4.0.0</uiframeworkVersion>
-        <uicommonsModuleVersion>2.26.0</uicommonsModuleVersion>
-        <appuiVersion>1.18.0</appuiVersion>
-        <legacyuiVersion>2.1.0</legacyuiVersion>
         <openMRSVersion>2.5.9</openMRSVersion>
         <junitVersion>4.13.2</junitVersion>
         <hamcrestVersion>3.0</hamcrestVersion>

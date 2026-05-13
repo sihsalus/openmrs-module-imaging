@@ -10,7 +10,7 @@
 
     <groupId>io.github.proyecto-santaclotilde</groupId>
     <artifactId>imaging</artifactId>
-    <version>1.2.1</version>
+    <version>1.2.2</version>
     <packaging>pom</packaging>
     <name>Imaging OpenMRS Module</name>
     <description>OpenMRS module for connecting OpenMRS with Orthanc imaging workflows.</description>
@@ -361,8 +361,8 @@
                         <extensions>true</extensions>
                         <configuration>
                             <publishingServerId>central</publishingServerId>
-                            <autoPublish>false</autoPublish>
-                            <waitUntil>validated</waitUntil>
+                            <autoPublish>true</autoPublish>
+                            <waitUntil>published</waitUntil>
                         </configuration>
                     </plugin>
                 </plugins>

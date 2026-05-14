@@ -23,8 +23,10 @@ import org.openmrs.api.context.Context;
 import org.openmrs.module.imaging.OrthancConfiguration;
 import org.openmrs.module.imaging.api.DicomStudyService;
 import org.openmrs.module.imaging.api.OrthancConfigurationService;
+import org.openmrs.module.imaging.api.client.OrthancHttpClient;
 import org.openmrs.module.imaging.api.study.DicomStudy;
 import org.openmrs.module.imaging.ClientConnectionPair;
+import org.openmrs.module.imaging.web.controller.RequestModel.OrthancConfigurationRequest;
 import org.openmrs.module.imaging.web.controller.ResponseModel.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -199,6 +201,39 @@ public class DicomStudyControllerTest extends BaseWebControllerTest {
 		assertEquals(2, body.size());
 		assertEquals("http://localhost:8052", body.get(0).getOrthancBaseUrl());
 		assertEquals("http://localhost:8062", body.get(1).getOrthancBaseUrl());
+	}
+	
+	@Test
+	public void testCreateOrthancConfiguration_ShouldPersistAndReturnCreated() throws Exception {
+		OrthancHttpClient mockHttpClient = mock(OrthancHttpClient.class);
+		orthancConfigurationService.setHttpClient(mockHttpClient);
+		
+		OrthancConfigurationRequest payload = new OrthancConfigurationRequest();
+		payload.setOrthancBaseUrl("http://orthanc:8042");
+		payload.setOrthancProxyUrl("http://gateway:8043");
+		payload.setOrthancUsername("orthanc-user");
+		payload.setOrthancPassword("orthanc-pass");
+		
+		when(mockHttpClient.isOrthancReachable(any(OrthancConfiguration.class))).thenReturn(true);
+		
+		MockHttpServletRequest request = newPostRequest("/rest/v1/imaging/configurations", payload);
+		MockHttpServletResponse response = new MockHttpServletResponse();
+		
+		ResponseEntity<Object> result = controller.createOrthancConfiguration(payload, request, response);
+		
+		assertEquals(201, result.getStatusCodeValue());
+		OrthancConfigurationResponse body = (OrthancConfigurationResponse) result.getBody();
+		assertNotNull(body);
+		assertNotNull(body.getId());
+		assertEquals("http://orthanc:8042", body.getOrthancBaseUrl());
+		assertEquals("http://gateway:8043", body.getOrthancProxyUrl());
+		
+		List<OrthancConfigurationResponse> configurations = (List<OrthancConfigurationResponse>) controller
+		        .useOrthancConfigurations(newGetRequest("/rest/v1/imaging/configurations"), new MockHttpServletResponse())
+		        .getBody();
+		assertNotNull(configurations);
+		assertEquals(3, configurations.size());
+		assertEquals("http://orthanc:8042", configurations.get(2).getOrthancBaseUrl());
 	}
 	
 	@Test

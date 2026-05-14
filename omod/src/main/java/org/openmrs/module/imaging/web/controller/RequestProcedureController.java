@@ -52,19 +52,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Controller("${rootrootArtifactId}.RequestProcedureController")
 @RequestMapping("/rest/" + RestConstants.VERSION_1 + "/worklist")
 public class RequestProcedureController {
-
+	
 	protected Log log = LogFactory.getLog(this.getClass());
-
+	
 	private static final ObjectMapper mapper = new ObjectMapper();
-
+	
 	private static final int FUZZY_THRESHOLD = 98;
-
+	
 	private static final Set<String> ALLOWED_REQUEST_STATUSES = new HashSet<String>(Arrays.asList("scheduled", "progress",
 	    "in progress", "completed"));
-
+	
 	private static final Set<String> ALLOWED_STEP_STATUSES = new HashSet<String>(Arrays.asList("scheduled", "in progress",
 	    "completed", "rejected"));
-
+	
 	@RequestMapping(value = "/requests", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	@Authorized(ImagingConstants.PRIVILEGE_EDIT_WORKLIST)
     @Transactional
@@ -102,7 +102,7 @@ public class RequestProcedureController {
         }
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
-
+	
 	/**
 	 * @param rp The request procedure object
 	 * @param map The worklist data map
@@ -137,7 +137,7 @@ public class RequestProcedureController {
 		}
 		map.put("ScheduledProcedureStepSequence", stepList);
 	}
-
+	
 	/**
 	 * @param step The request procedure step
 	 * @param stepList The list of the procedure step
@@ -157,7 +157,7 @@ public class RequestProcedureController {
 		stepMap.put("CommentsOnTheScheduledProcedureStep", "no value available");
 		stepList.add(stepMap);
 	}
-
+	
 	/**
 	 * @param payload The whole study data procedure that has been performed in this step.
 	 */
@@ -244,7 +244,7 @@ public class RequestProcedureController {
         }
         return ResponseEntity.ok("No series data found in payload");
     }
-
+	
 	/**
 	 * @param requestProcedure The procedure for requesting patient image data.
 	 * @param payload The metadata of image study for comparison
@@ -285,7 +285,7 @@ public class RequestProcedureController {
             study.setMrsPatient(patient);
         }
 	}
-
+	
 	/**
 	 * @param requestProcedure The procedure for requesting patient image data.
 	 * @param stepList The procedure steps of the request procedure
@@ -444,7 +444,7 @@ public class RequestProcedureController {
         }
         return new ComparisonResult(score, diffs);
     }
-
+	
 	private boolean isFuzzyMatch(String a, String b, int threshold) {
 		if (isNotBlank(a) && isNotBlank(b)) {
 			int score = FuzzySearch.tokenSetRatio(a.toLowerCase(Locale.ROOT), b.toLowerCase(Locale.ROOT));
@@ -452,20 +452,20 @@ public class RequestProcedureController {
 		}
 		return true;
 	}
-
+	
 	/**
 	 * @param step The procedure step of worklist request
 	 * @return The retrieved patient name
 	 */
 	private static String getPatientNameDB(RequestProcedureStep step) {
 		Patient patient = step.getRequestProcedure() != null ? step.getRequestProcedure().getMrsPatient() : null;
-
+		
 		String givenNameDB = patient != null && patient.getGivenName() != null ? patient.getGivenName().trim() : "";
-
+		
 		String familyNameDB = patient != null && patient.getFamilyName() != null ? patient.getFamilyName().trim() : "";
 		return (givenNameDB + " " + familyNameDB).trim();
 	}
-
+	
 	@RequestMapping(value = "/updateprocedurestepstatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	@Authorized(ImagingConstants.PRIVILEGE_EDIT_WORKLIST)
     @Transactional
@@ -488,7 +488,7 @@ public class RequestProcedureController {
         requestProcedureStepService.updatePerformedProcedureStepStatus(step, status);
         return new ResponseEntity<>("", HttpStatus.OK);
     }
-
+	
 	/**
 	 * @param requestPostData The data for the new request procedure
 	 * @return The response entity resulting from the request processing
@@ -530,7 +530,7 @@ public class RequestProcedureController {
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
 		}
 	}
-
+	
 	/**
 	 * @param stepPostData The data for the procedure step
 	 * @return The response entity resulting from the request processing
@@ -572,7 +572,7 @@ public class RequestProcedureController {
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
-
+	
 	/**
 	 * @param patientUuid The patient unique ID
 	 * @return The response entity resulting from the request processing
@@ -597,7 +597,7 @@ public class RequestProcedureController {
         }
         return new ResponseEntity<>(requestProcedureResponseList, HttpStatus.OK);
     }
-
+	
 	/**
 	 * @param requestId The request procedure ID
 	 * @return The retrieved procedure step list
@@ -619,7 +619,7 @@ public class RequestProcedureController {
 		List<ProcedureStepResponse> procedureStepResponseList = steps.stream().map(ProcedureStepResponse::createResponse).collect(Collectors.toList());
 		return new ResponseEntity<>(procedureStepResponseList, HttpStatus.OK);
 	}
-
+	
 	/**
 	 * @param requestId The request procedure ID
 	 * @return The response entity
@@ -654,7 +654,7 @@ public class RequestProcedureController {
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
-
+	
 	/**
 	 * @param stepId The procedure step of the request
 	 * @param request The request of procedure

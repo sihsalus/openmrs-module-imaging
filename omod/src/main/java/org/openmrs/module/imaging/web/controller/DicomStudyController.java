@@ -26,6 +26,7 @@ import org.openmrs.module.imaging.api.OrthancConfigurationService;
 import org.openmrs.module.imaging.api.study.DicomInstance;
 import org.openmrs.module.imaging.api.study.DicomSeries;
 import org.openmrs.module.imaging.api.study.DicomStudy;
+import org.openmrs.module.imaging.web.controller.RequestModel.OrthancConfigurationRequest;
 import org.openmrs.module.imaging.web.controller.ResponseModel.*;
 import org.openmrs.module.webservices.rest.web.RestConstants;
 import org.springframework.http.HttpHeaders;
@@ -48,16 +49,16 @@ import java.util.*;
 @Controller("${rootrootArtifactId}.DicomStudyController")
 @RequestMapping("/rest/" + RestConstants.VERSION_1 + "/" + ImagingConstants.MODULE_ID)
 public class DicomStudyController {
-
+	
 	private static final Set<String> ALLOWED_FETCH_OPTIONS = new HashSet<String>(Arrays.asList("all", "newest"));
-
+	
 	private static final Set<String> ALLOWED_DELETE_OPTIONS = new HashSet<String>(Arrays.asList("openmrs", "orthanc",
 	    "openmrsOrthanc"));
-
+	
 	private static final Set<Integer> ALLOWED_LINK_STATUSES = new HashSet<Integer>(Arrays.asList(-1, 0, 1, 2));
-
+	
 	protected Log log = LogFactory.getLog(this.getClass());
-
+	
 	/**
 	 * @param patientUuid The openMRS unique patient ID
 	 * @return The dicom studies
@@ -78,7 +79,7 @@ public class DicomStudyController {
 
         return new ResponseEntity<>(responseList, HttpStatus.OK);
     }
-
+	
 	/**
 	 * @param configurationId The configuration ID
 	 * @param patientUuid The patient unique ID
@@ -124,7 +125,7 @@ public class DicomStudyController {
 
         return new ResponseEntity<>(studiesWithScore, HttpStatus.OK);
     }
-
+	
 	/**
 	 * @param studyId The dicom series of the study
 	 * @return The dicom series
@@ -152,7 +153,7 @@ public class DicomStudyController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
+	
 	/**
 	 * @param seriesInstanceUID The dicom series ID of the series
 	 * @param studyId The study ID
@@ -183,7 +184,7 @@ public class DicomStudyController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
+	
 	/**
 	 * @return All the configured servers
 	 */
@@ -196,7 +197,45 @@ public class DicomStudyController {
         List<OrthancConfigurationResponse> orthancConfigurationResponseList = OrthancConfigurationResponse.configurationResponseList(configurations);
         return new ResponseEntity<>(orthancConfigurationResponseList, HttpStatus.OK);
     }
-
+	
+	/**
+	 * @param configurationRequest The configuration payload to create a new Orthanc server
+	 *            connection.
+	 * @return The created configuration.
+	 */
+	@RequestMapping(value = "/configurations", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE,
+	        produces = MediaType.APPLICATION_JSON_VALUE)
+	@Authorized(ImagingConstants.TASK_MANAGER_ORTHANC_CONFIGURATION)
+    @Transactional
+    public ResponseEntity<Object> createOrthancConfiguration(
+	        @RequestBody OrthancConfigurationRequest configurationRequest, HttpServletRequest request,
+	        HttpServletResponse response) {
+		if (configurationRequest == null) {
+			return new ResponseEntity<>("Orthanc configuration payload is missing", HttpStatus.BAD_REQUEST);
+		}
+		
+		String orthancBaseUrl = normalize(configurationRequest.getOrthancBaseUrl());
+		if (orthancBaseUrl == null || orthancBaseUrl.isEmpty()) {
+			return new ResponseEntity<>("orthancBaseUrl is required", HttpStatus.BAD_REQUEST);
+		}
+		
+		OrthancConfigurationService orthancConfigurationService = Context.getService(OrthancConfigurationService.class);
+		OrthancConfiguration configuration = new OrthancConfiguration();
+		configuration.setOrthancBaseUrl(orthancBaseUrl);
+		configuration.setOrthancProxyUrl(normalize(configurationRequest.getOrthancProxyUrl()));
+		configuration.setOrthancUsername(emptyIfNull(normalize(configurationRequest.getOrthancUsername())));
+		configuration.setOrthancPassword(emptyIfNull(normalize(configurationRequest.getOrthancPassword())));
+		configuration.setLastChangedIndex(-1);
+		
+		try {
+			orthancConfigurationService.saveOrthancConfiguration(configuration);
+			return new ResponseEntity<>(OrthancConfigurationResponse.createResponse(configuration), HttpStatus.CREATED);
+		}
+		catch (IllegalArgumentException e) {
+			return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+		}
+	}
+	
 	/**
 	 * @param file The DICOM study files that should be uploaded to the Orthanc server."
 	 * @param configurationId The configuration ID
@@ -220,7 +259,7 @@ public class DicomStudyController {
         dicomStudyService.uploadFile(configuration, file.getInputStream());
         return new ResponseEntity<>("", HttpStatus.OK);
     }
-
+	
 	/**
 	 * @param configurationId The configured server ID where the studies are stored.
 	 * @param fetchOption options: (all, newest)
@@ -253,7 +292,7 @@ public class DicomStudyController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
+	
 	/**
 	 * @param studyId The dicom study ID
 	 * @param patientUuid The openmrs patient unique ID
@@ -290,7 +329,7 @@ public class DicomStudyController {
         }
         return new ResponseEntity<>("", HttpStatus.OK);
     }
-
+	
 	@RequestMapping(value="/updatestudyLinkStatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	@Authorized(ImagingConstants.PRIVILEGE_LINK_IMAGE_STUDIES)
     @Transactional
@@ -315,7 +354,7 @@ public class DicomStudyController {
         dicomStudyService.updateLinkStatus(study, linkStatus);
         return new ResponseEntity<>("", HttpStatus.OK);
     }
-
+	
 	/**
 	 * @param studyId The dicom study ID
 	 * @param deleteOption Options: (from openmrs, from openmrs and orthanc)
@@ -349,7 +388,7 @@ public class DicomStudyController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
+	
 	/**
 	 * @param orthancSeriesUID The unique series ID generated by the Orthanc server
 	 * @param studyId The study ID
@@ -374,7 +413,7 @@ public class DicomStudyController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
+	
 	/**
 	 * @param orthancInstanceUID The unique series ID generated by the Orthanc server
 	 * @param studyId The study ID
@@ -400,5 +439,13 @@ public class DicomStudyController {
 		catch (IOException e) {
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
+	}
+	
+	private String normalize(String value) {
+		return value == null ? null : value.trim();
+	}
+	
+	private String emptyIfNull(String value) {
+		return value == null ? "" : value;
 	}
 }

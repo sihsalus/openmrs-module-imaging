@@ -28,14 +28,14 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 public class OrthancHttpClientTest {
-
+	
 	private OrthancHttpClient httpClient;
-
+	
 	@Before
 	public void setUp() {
 		httpClient = new OrthancHttpClient();
 	}
-
+	
 	@Test
 	public void testCreateConnection() throws IOException {
 		String method = "POST";
@@ -43,30 +43,30 @@ public class OrthancHttpClientTest {
 		String path = "/system";
 		String userName = "orthanc";
 		String password = "orthanc";
-
+		
 		HttpURLConnection con = httpClient.createConnection(method, url, path, userName, password);
-
+		
 		assertEquals("POST", con.getRequestMethod());
 		String expectedAuth = "Basic " + Base64.getEncoder().encodeToString((userName + ":" + password).getBytes());
 		assertFalse(con.getUseCaches());
 	}
-
+	
 	@Test
 	public void testSendOrthancQuery() throws IOException {
 		HttpURLConnection con = mock(HttpURLConnection.class);
 		OutputStream os = mock(OutputStream.class);
 		when(con.getOutputStream()).thenReturn(os);
-
+		
 		String query = "{\"query\":\"test\"}";
 		httpClient.sendOrthancQuery(con, query);
-
+		
 		verify(con).setRequestProperty("Content-Type", "application/json; charset=UTF-8");
 		verify(con).setRequestProperty("charset", "utf-8");
 		verify(con).setRequestProperty("Content-Length", Integer.toString(query.getBytes().length));
 		verify(con).setDoOutput(true);
 		verify(con).getOutputStream();
 	}
-
+	
 	@Test
     public void testThrowConnectionException() throws IOException {
         OrthancConfiguration config = mock(OrthancConfiguration.class);
@@ -81,7 +81,7 @@ public class OrthancHttpClientTest {
         );
         assertTrue(exception.getMessage().contains("Request to Orthanc server " + config.getOrthancBaseUrl() + " failed with error"));
     }
-
+	
 	@Test
 	public void testIsOrthancReachable_unreachableServer() throws IOException {
 		OrthancConfiguration config = mock(OrthancConfiguration.class);
@@ -89,18 +89,18 @@ public class OrthancHttpClientTest {
 		when(config.getOrthancProxyUrl()).thenReturn("");
 		when(config.getOrthancPassword()).thenReturn("orthanc");
 		when(config.getOrthancUsername()).thenReturn("orthanc");
-
+		
 		boolean reachable = httpClient.isOrthancReachable(config);
 		assertFalse(reachable);
 	}
-
+	
 	@Test
 	public void testGetStatus() throws IOException {
 		HttpURLConnection con = mock(HttpURLConnection.class);
 		when(con.getResponseCode()).thenReturn(200);
 		assertEquals(200, httpClient.getStatus(con));
 	}
-
+	
 	@Test
 	public void testGetResponseStream() throws IOException {
 		HttpURLConnection con = mock(HttpURLConnection.class);
@@ -108,12 +108,12 @@ public class OrthancHttpClientTest {
 		when(con.getInputStream()).thenReturn(inputStream);
 		assertEquals(inputStream, httpClient.getResponseStream(con));
 	}
-
+	
 	@Test
 	public void testGetErrorMessage() throws IOException {
 		HttpURLConnection con = mock(HttpURLConnection.class);
 		when(con.getResponseMessage()).thenReturn("Not Found");
 		assertEquals("Not Found", httpClient.getErrorMessage(con));
 	}
-
+	
 }

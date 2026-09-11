@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog/1.9"
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog/1.9
-                  http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-1.9.xsd">
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                  http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
 
     <!--
     	See http://wiki.openmrs.org/display/docs/Module+liquibase+File for
@@ -361,6 +361,51 @@
             <column name="role" value="Imaging Manager"/>
             <column name="privilege" value="Task: Receive Orthanc Updates"/>
         </insert>
+    </changeSet>
+
+    <changeSet id="418-unique-study-per-orthanc-configuration" author="sihsalus">
+        <preConditions onFail="HALT" onError="HALT"
+                       onFailMessage="Duplicate imaging studies require clinical reconciliation before this migration. No study is deleted automatically.">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM (
+                    SELECT orthancConfigurationId, studyInstanceUID
+                    FROM imaging_DicomStudy
+                    GROUP BY orthancConfigurationId, studyInstanceUID HAVING COUNT(*) &gt; 1
+                ) duplicate_studies
+            </sqlCheck>
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM (
+                    SELECT orthancConfigurationId, orthancStudyUID
+                    FROM imaging_DicomStudy
+                    GROUP BY orthancConfigurationId, orthancStudyUID HAVING COUNT(*) &gt; 1
+                ) duplicate_resources
+            </sqlCheck>
+        </preConditions>
+        <comment>Prevent concurrent imports from creating conflicting copies of one clinical study.</comment>
+        <addUniqueConstraint tableName="imaging_DicomStudy" columnNames="orthancConfigurationId,studyInstanceUID"
+                             constraintName="imaging_study_config_uid_unique"/>
+        <addUniqueConstraint tableName="imaging_DicomStudy" columnNames="orthancConfigurationId,orthancStudyUID"
+                             constraintName="imaging_study_config_resource_unique"/>
+    </changeSet>
+
+    <changeSet id="419-worklist-optimistic-version" author="sihsalus">
+        <comment>Reject concurrent stale changes instead of overwriting a clinical rejection or completion.</comment>
+        <addColumn tableName="imaging_RequestProcedure">
+            <column name="version" type="int" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addColumn tableName="imaging_RequestProcedureStep">
+            <column name="version" type="int" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="420-preserve-full-study-comparison" author="sihsalus">
+        <comment>Keep every clinical discrepancy in studies containing multiple procedure steps.</comment>
+        <!-- Liquibase maps CLOB to LONGTEXT on MySQL and CLOB on H2. Widen existing data without truncation. -->
+        <modifyDataType tableName="imaging_DicomStudy" columnName="comparisonResult" newDataType="clob"/>
     </changeSet>
 
 </databaseChangeLog>

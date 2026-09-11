@@ -19,6 +19,16 @@ public class RequestProcedureStep extends BaseOpenmrsData implements java.io.Ser
 	
 	private static final long serialVersionUID = 1;
 	
+	private Integer version = 0;
+
+	public Integer getVersion() {
+		return version;
+	}
+
+	public void setVersion(Integer version) {
+		this.version = version;
+	}
+
 	private Integer id;
 	
 	private Integer stepNumber;

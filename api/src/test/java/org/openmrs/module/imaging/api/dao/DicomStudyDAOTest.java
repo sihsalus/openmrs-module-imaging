@@ -136,4 +136,21 @@ public class DicomStudyDAOTest extends BaseModuleContextSensitiveTest {
 		List<DicomStudy> studies = dicomStudyDao.getAll();
 		assertEquals(1, studies.size());
 	}
+
+	@Test
+	public void getForUpdatePreservesPendingMetadataAndClinicalCorrectionsWhenRefreshing() {
+		DicomStudy study = dicomStudyDao.get(1);
+		study.setStudyDescription("Synthetic metadata updated before association");
+		dicomStudyDao.updateLinkStatus(study, 2);
+		DicomStudy locked = dicomStudyDao.getForUpdate(study.getId());
+		assertSame(study, locked);
+		assertEquals("Synthetic metadata updated before association", locked.getStudyDescription());
+		assertEquals(2, locked.getLinkStatus());
+		assertEquals(Context.getPatientService().getPatient(1), locked.getMrsPatient());
+	}
+
+	@Test
+	public void getForUpdateReturnsNullForAnAbsentStudy() {
+		assertNull(dicomStudyDao.getForUpdate(99999));
+	}
 }

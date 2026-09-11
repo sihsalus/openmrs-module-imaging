@@ -21,6 +21,16 @@ public class RequestProcedure extends BaseOpenmrsData implements java.io.Seriali
 	
 	private static final long serialVersionUID = 1;
 	
+	private Integer version = 0;
+
+	public Integer getVersion() {
+		return version;
+	}
+
+	public void setVersion(Integer version) {
+		this.version = version;
+	}
+
 	private Integer id;
 	
 	private String status; //e.g. active, completed

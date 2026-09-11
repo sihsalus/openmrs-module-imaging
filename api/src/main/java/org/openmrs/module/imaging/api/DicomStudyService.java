@@ -56,6 +56,9 @@ public interface DicomStudyService extends OpenmrsService {
 	List<DicomStudy> getAllStudies();
 	
 	DicomStudy getDicomStudy(int id);
+
+	/** For patient association changes; the caller must keep the transaction open. */
+	DicomStudy getDicomStudyForUpdate(int id);
 	
 	DicomStudy getDicomStudy(OrthancConfiguration config, String studyInstanceUID);
 	
@@ -75,6 +78,9 @@ public interface DicomStudyService extends OpenmrsService {
 	UploadResult uploadFile(OrthancConfiguration config, InputStream is) throws IOException;
 	
 	void setPatient(DicomStudy study, Patient patient);
+
+	/** Verify the study's patient identity against current Orthanc metadata before automatic linking. */
+	boolean isStudyForPatient(DicomStudy study, Patient patient) throws IOException;
 	
 	void deleteStudy(DicomStudy dicomStudy) throws IOException;
 	
@@ -106,6 +112,14 @@ public interface DicomStudyService extends OpenmrsService {
 		public String studyInstanceUID;
 		
 		public DicomStudy study;
+	}
+
+	class UnsupportedArchiveException extends IOException {
+		private static final long serialVersionUID = 1L;
+
+		public UnsupportedArchiveException() {
+			super("Upload individual DICOM files; ZIP archives are not supported");
+		}
 	}
 	
 	PreviewResult fetchInstancePreview(String orthancInstanceUID, DicomStudy study) throws IOException;

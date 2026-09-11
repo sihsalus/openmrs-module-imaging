@@ -15,8 +15,6 @@ package org.openmrs.module.imaging.web.controller;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mockito;
 import org.openmrs.Patient;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.imaging.api.RequestProcedureService;
@@ -25,7 +23,6 @@ import org.openmrs.module.imaging.api.worklist.RequestProcedure;
 import org.openmrs.module.imaging.api.worklist.RequestProcedureStep;
 import org.openmrs.module.imaging.web.controller.ResponseModel.ProcedureStepResponse;
 import org.openmrs.module.imaging.web.controller.ResponseModel.RequestProcedureResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -40,57 +37,13 @@ public class RequestProcedureControllerTest extends BaseWebControllerTest {
 	
 	private static final String REQUEST_PROCEDURE_DATASET = "testRequestProcedureDataset.xml";
 	
-	@InjectMocks
 	private RequestProcedureController controller;
-	
-	private RequestProcedureStepService requestProcedureStepService;
 	
 	@Before
 	public void setUp() throws Exception {
+		controller = new RequestProcedureController();
 		executeDataSet(REQUEST_PROCEDURE_DATASET);
 	}
-	
-	private static StudyUpdatePayload getStudyUpdatePayload(RequestProcedure requestProcedure,
-                                                            RequestProcedureStep step) {
-        StudyUpdatePayload payload = new StudyUpdatePayload();
-
-        // StudyInfo
-        StudyUpdatePayload.StudyInfo info = new StudyUpdatePayload.StudyInfo();
-        info.setStudyInstanceUID(requestProcedure.getStudyInstanceUID());
-        payload.setStudyInfo(info);
-
-        StudyUpdatePayload.SeriesEntry entry = new StudyUpdatePayload.SeriesEntry();
-        entry.setScheduledProcedureStepID(step.getId().toString());
-
-        StudyUpdatePayload.InstanceInfo instance = new StudyUpdatePayload.InstanceInfo();
-        instance.setScheduledProcedureStepID(step.getId().toString());
-        instance.setStudyInstanceUID(requestProcedure.getStudyInstanceUID());
-
-        if (step.getRequestProcedure().getMrsPatient() != null) {
-            String givenName = step.getRequestProcedure().getMrsPatient().getGivenName();
-            String familyName = step.getRequestProcedure().getMrsPatient().getFamilyName();
-            instance.setPatientName(givenName + " " + familyName);
-
-            if (step.getRequestProcedure().getMrsPatient().getPatientId() != null) {
-                instance.setPatientID(step.getRequestProcedure().getMrsPatient().getPatientId().toString());
-            }
-            if (step.getRequestProcedure().getMrsPatient().getBirthdate() != null) {
-                instance.setPatientBirthDate(step.getRequestProcedure().getMrsPatient().getBirthdate().toString());
-            }
-        }
-
-        instance.setScheduledPerformingPhysician(step.getScheduledPerformingPhysician());
-        instance.setPerformedProcedureStepDescription(step.getRequestedProcedureDescription());
-
-        entry.setInstanceInfo(instance);
-
-        // Add entry to series list
-        List<StudyUpdatePayload.SeriesEntry> seriesList = new ArrayList<>();
-        seriesList.add(entry);
-        payload.setSeriesList(seriesList);
-
-        return payload;
-    }
 	
 	@Test
     @Transactional
@@ -101,55 +54,6 @@ public class RequestProcedureControllerTest extends BaseWebControllerTest {
         assertTrue("Expected all procedures to be scheduled",
                 requestProcedures.stream().allMatch(rp -> "scheduled".equalsIgnoreCase(rp.getStatus())));
     }
-	
-	//	@Test
-	//    @Transactional
-	//    public void testUpdateRequestStatus_shouldMarkProcedureCompletedIfAllStepsCompleted() throws Exception {
-	//        executeDataSet("testRequestProcedureStepDataset.xml");
-	//
-	//        // Fetch procedure and steps
-	//        RequestProcedureService requestProcedureService = Context.getService(RequestProcedureService.class);
-	//        RequestProcedureStepService requestProcedureStepService = Context.getService(RequestProcedureStepService.class);
-	//
-	//        RequestProcedure requestProcedure = requestProcedureService.getRequestProcedure(1);// scheduled procedure
-	//        assertNotNull(requestProcedure);
-	//
-	//        List<RequestProcedureStep> steps = requestProcedureStepService.getAllStepByRequestProcedure(requestProcedure);
-	//        assertFalse(steps.isEmpty());
-	//
-	//        RequestProcedureStep step = steps.get(0);
-	//
-	//        StudyUpdatePayload payload = getStudyUpdatePayload(requestProcedure, step);
-	//
-	//        // Convert payload to JSON
-	//        String jsonRequestContent = new ObjectMapper().writeValueAsString(payload);
-	//
-	//        MockHttpServletRequest request = newPostRequest(
-	//                "/rest/v1/worklist/updaterequeststatus?studyInstanceUID="
-	//                + requestProcedure.getStudyInstanceUID()
-	//                + "&scheduledProcedureStepID="+ step.getId().toString(),
-	//                jsonRequestContent
-	//        );
-	//
-	//        MockHttpServletResponse response = new MockHttpServletResponse();
-	//
-	//        controller.updateRequestStatus(request, response, payload);
-	//
-	//        RequestProcedureStep updatedStep = requestProcedureStepService.getProcedureStep(step.getId());
-	//        assertEquals("completed", updatedStep.getPerformedProcedureStepStatus());
-	//
-	//        RequestProcedure updatedProcedure = requestProcedureService.getRequestProcedure(requestProcedure.getId());
-	//        assertEquals(requestProcedure.getStudyInstanceUID(), updatedProcedure.getStudyInstanceUID());
-	//
-	//        List<RequestProcedureStep> updatedSteps = requestProcedureStepService.getAllStepByRequestProcedure(updatedProcedure);
-	//        boolean allCompleted = updatedSteps.stream()
-	//                .allMatch(s -> "completed".equalsIgnoreCase(s.getPerformedProcedureStepStatus()));
-	//
-	//        if (allCompleted) {
-	//            assertEquals("completed", updatedProcedure.getStatus());
-	//        }
-	//    }
-	//
 	
 	@Test
 	@Transactional
@@ -203,6 +107,87 @@ public class RequestProcedureControllerTest extends BaseWebControllerTest {
 				&& "scheduled".equalsIgnoreCase(rp.getStatus())
 				&& "Dr. House".equals(rp.getRequestingPhysician()));
 		assertTrue("New request procedure should be created", found);
+		RequestProcedure created = procedures.stream().filter(rp -> "ACC2001".equals(rp.getAccessionNumber()))
+		    .findFirst().get();
+		assertTrue(created.getStudyInstanceUID().matches("2\\.25\\.[0-9]+"));
+		assertTrue(created.getStudyInstanceUID().length() <= 64);
+	}
+
+	@Test
+	public void rejectsInvalidRequestFieldsWithoutCreatingARequest() {
+		RequestProcedureService service = Context.getService(RequestProcedureService.class);
+		int count = service.getAllRequestProcedures().size();
+		assertEquals(400, controller.saveRequestProcedure(null, new MockHttpServletRequest(),
+		    new MockHttpServletResponse()).getStatusCodeValue());
+		Object[][] invalidFields = {
+		    { "configurationId", "1" }, { "configurationId", 0 }, { "patientUuid", 1 },
+		    { "accessionNumber", "ABCDEFGHIJKLMNOPQ" }, { "accessionNumber", "A\\B" },
+		    { "accessionNumber", "A\nB" }, { "accessionNumber", " " },
+		    { "requestingPhysician", null }, { "requestingPhysician", " " },
+		    { "requestDescription", 12 }, { "requestDescription", String.join("", Collections.nCopies(65, "A")) },
+		    { "priority", "ABCDEFGHIJKLMNOPQ" }, { "priority", "Hi\ngh" }
+		};
+		for (Object[] invalid : invalidFields) {
+			Map<String, Object> body = validRequest();
+			body.put((String) invalid[0], invalid[1]);
+			assertEquals("Invalid field: " + invalid[0], 400, controller.saveRequestProcedure(body,
+			    new MockHttpServletRequest(), new MockHttpServletResponse()).getStatusCodeValue());
+			assertEquals(count, service.getAllRequestProcedures().size());
+		}
+	}
+
+	@Test
+	public void rejectsInvalidStepFieldsWithoutAdvancingTheRequest() throws Exception {
+		executeDataSet("testRequestProcedureStepDataset.xml");
+		RequestProcedureService requestService = Context.getService(RequestProcedureService.class);
+		RequestProcedureStepService stepService = Context.getService(RequestProcedureStepService.class);
+		RequestProcedure procedure = requestService.getRequestProcedure(1);
+		String previousStatus = procedure.getStatus();
+		int count = stepService.getAllStepByRequestProcedure(procedure).size();
+		assertEquals(400, controller.saveRequestProcedureStep(null, new MockHttpServletRequest(),
+		    new MockHttpServletResponse()).getStatusCodeValue());
+		Object[][] invalidFields = {
+		    { "requestId", "1" }, { "requestId", -1 }, { "modality", "ct" }, { "modality", "CT\\MR" },
+		    { "aetTitle", "ABCDEFGHIJKLMNOPQ" }, { "aetTitle", "A\nB" },
+		    { "stepStartDate", "20270229" }, { "stepStartDate", "20300101250000" },
+		    { "stepStartTime", "24:00" }, { "stepStartTime", null },
+		    { "scheduledPerformingPhysician", " " }, { "requestedProcedureDescription", 12 },
+		    { "stationName", "ABCDEFGHIJKLMNOPQ" }, { "stationName", "CT_ROOM\n" },
+		    { "procedureStepLocation", "A\\B" }
+		};
+		for (Object[] invalid : invalidFields) {
+			Map<String, Object> body = validStep();
+			body.put((String) invalid[0], invalid[1]);
+			assertEquals("Invalid field: " + invalid[0], 400, controller.saveRequestProcedureStep(body,
+			    new MockHttpServletRequest(), new MockHttpServletResponse()).getStatusCodeValue());
+			assertEquals(count, stepService.getAllStepByRequestProcedure(procedure).size());
+			assertEquals(previousStatus, procedure.getStatus());
+		}
+	}
+
+	private Map<String, Object> validRequest() {
+		Map<String, Object> body = new HashMap<>();
+		body.put("patientUuid", "63cafe66-924c-4868-aaa5-d2d77bf26789");
+		body.put("configurationId", 1);
+		body.put("accessionNumber", "SYNTHETICNEW");
+		body.put("requestingPhysician", "Dr. Synthetic");
+		body.put("requestDescription", "Synthetic imaging request");
+		body.put("priority", "High");
+		return body;
+	}
+
+	private Map<String, Object> validStep() {
+		Map<String, Object> body = new HashMap<>();
+		body.put("requestId", 1);
+		body.put("modality", "CT");
+		body.put("aetTitle", "SYNTHETIC_CT");
+		body.put("stepStartDate", "2030-01-01");
+		body.put("stepStartTime", "00:00");
+		body.put("scheduledPerformingPhysician", "Dr. Synthetic");
+		body.put("requestedProcedureDescription", "Synthetic CT");
+		body.put("stationName", "CT_ROOM");
+		body.put("procedureStepLocation", "Radiology");
+		return body;
 	}
 	
 	@Test
@@ -240,12 +225,14 @@ public class RequestProcedureControllerTest extends BaseWebControllerTest {
 						"CT_AET1".equals(step.getAetTitle()) &&
 						"Dr. Smith".equals(step.getScheduledPerformingPhysician()) &&
 						"Chest CT".equals(step.getRequestedProcedureDescription()) &&
-						"scheduled".equals(step.getPerformedProcedureStepStatus())
+						"scheduled".equals(step.getPerformedProcedureStepStatus()) &&
+						"20250825".equals(step.getStepStartDate()) &&
+						"100000".equals(step.getStepStartTime())
 				);
 		assertTrue("New procedure step should be created", found);
 
 		RequestProcedure updatedRequest = requestProcedureService.getRequestProcedure(requestProcedure.getId());
-		assertEquals("progress", updatedRequest.getStatus());
+		assertEquals("in progress", updatedRequest.getStatus());
 		assertEquals(4, steps.size());
 	}
 	

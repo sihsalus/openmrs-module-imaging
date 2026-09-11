@@ -15,6 +15,7 @@
 package org.openmrs.module.imaging.api.dao;
 
 import org.hibernate.Criteria;
+import org.hibernate.LockOptions;
 import org.hibernate.criterion.Restrictions;
 import org.openmrs.Patient;
 import org.openmrs.api.db.hibernate.DbSession;
@@ -45,6 +46,17 @@ public class DicomStudyDao {
 	
 	public DicomStudy get(int id) {
 		return (DicomStudy) getSession().get(DicomStudy.class, id);
+	}
+
+	/** Read the current owner under a database lock, including an already cached entity. */
+	public DicomStudy getForUpdate(int id) {
+		// A refresh must not discard metadata synchronized earlier in this transaction.
+		getSession().flush();
+		DicomStudy study = get(id);
+		if (study != null) {
+			getSession().refresh(study, LockOptions.UPGRADE);
+		}
+		return study;
 	}
 	
 	@SuppressWarnings("unchecked")

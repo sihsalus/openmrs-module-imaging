@@ -19,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.openmrs.Patient;
+import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.imaging.OrthancConfiguration;
 import org.openmrs.module.imaging.api.DicomStudyService;
@@ -36,6 +37,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -77,7 +79,7 @@ public class DicomStudyControllerTest extends BaseWebControllerTest {
 	
 	@Test
 	public void testUseStudiesByPatient_ShouldReturnStudiesForPatient() throws Exception {
-		
+		ClientConnectionPair synchronization = mockUnchangedStudies();
 		// Simulate a GET request
 		MockHttpServletRequest request = newGetRequest("/rest/v1/imaging/studies?patient=" + patient.getUuid());
 		MockHttpServletResponse response = new MockHttpServletResponse();
@@ -89,11 +91,13 @@ public class DicomStudyControllerTest extends BaseWebControllerTest {
 		assertFalse(studyResponses.isEmpty());
 		assertEquals("studyInstanceUID555", studyResponses.get(0).getStudyInstanceUID());
 		assertEquals("studyInstanceUID444", studyResponses.get(1).getStudyInstanceUID());
+		verify(synchronization.getConnection(), times(1)).getResponseCode();
+		verify(synchronization.getConnection()).disconnect();
 	}
 	
 	@Test
 	public void testUseStudiesByConfig_ShouldReturnStudiesWithScores() throws Exception {
-		
+		mockUnchangedStudies();
 		// Simulate a GET request
 		MockHttpServletRequest request = newGetRequest("/rest/v1/imaging/studiesbyconfig?configurationId=" + config.getId()
 		        + "&patient=" + patient.getUuid());
@@ -113,6 +117,45 @@ public class DicomStudyControllerTest extends BaseWebControllerTest {
 		Map<String, Integer> scores = body.scores;
 		assertTrue(scores.containsKey("studyInstanceUID555"));
 		assertTrue(scores.get("studyInstanceUID555") > 0);
+	}
+
+	@Test
+	public void failedConfigurationSynchronizationReturns503WithoutCachedStudiesOrIdentifiers() throws Exception {
+		ClientConnectionPair synchronization = setupMockClientWithStatus(HttpURLConnection.HTTP_UNAVAILABLE,
+		    "GET", "/changes?limit=1000", "synthetic-private-upstream-body", config);
+		dicomStudyService.setHttpClient(synchronization.getClient());
+		ResponseEntity<Object> result = controller.useStudiesByConfig(config.getId(), patient.getUuid(),
+		    new MockHttpServletRequest(), new MockHttpServletResponse());
+		assertEquals(503, result.getStatusCodeValue());
+		assertEquals("The imaging studies could not be synchronized", result.getBody());
+		assertFalse(result.getBody().toString().contains(patient.getUuid()));
+		assertFalse(result.getBody().toString().contains(config.getOrthancBaseUrl()));
+		assertEquals(Integer.valueOf(-1), config.getLastChangedIndex());
+		verify(synchronization.getConnection()).disconnect();
+	}
+
+	@Test
+	public void failedPatientSynchronizationPropagatesAnErrorInsteadOfReturningCachedStudies() throws Exception {
+		ClientConnectionPair synchronization = setupMockClientWithStatus(HttpURLConnection.HTTP_UNAVAILABLE,
+		    "GET", "/changes?limit=1000", "synthetic-private-upstream-body", config);
+		when(synchronization.getConnection().getResponseCode()).thenThrow(new IOException(
+		    "synthetic upstream failure " + patient.getUuid() + " at " + config.getOrthancBaseUrl()));
+		dicomStudyService.setHttpClient(synchronization.getClient());
+		APIException error = assertThrows(APIException.class, () -> controller.useStudiesByPatient(patient.getUuid(),
+		    new MockHttpServletRequest(), new MockHttpServletResponse()));
+		assertEquals("The imaging studies could not be synchronized", error.getMessage());
+		assertNull(error.getCause());
+		assertEquals(Integer.valueOf(-1), config.getLastChangedIndex());
+		verify(synchronization.getConnection()).disconnect();
+	}
+
+	private ClientConnectionPair mockUnchangedStudies() throws IOException {
+		ClientConnectionPair synchronization = setupMockClientWithStatus(HttpURLConnection.HTTP_OK, "GET",
+		    "/changes?limit=1000", "", config);
+		when(synchronization.getConnection().getInputStream()).thenAnswer(invocation -> new ByteArrayInputStream(
+		    "{\"Changes\":[],\"Last\":0,\"Done\":true}".getBytes(StandardCharsets.UTF_8)));
+		dicomStudyService.setHttpClient(synchronization.getClient());
+		return synchronization;
 	}
 	
 	@Test
@@ -237,7 +280,7 @@ public class DicomStudyControllerTest extends BaseWebControllerTest {
 	}
 	
 	@Test
-	public void testUploadStudies_ShouldUploadFileAndReturnOk() throws Exception {
+	public void testUploadStudies_ShouldNotConfirmAnUnidentifiedStudy() throws Exception {
 		MockMultipartFile file = new MockMultipartFile("file", "test.dcm", "application/dicom",
 		        "dummy dicom content".getBytes());
 		
@@ -255,8 +298,7 @@ public class DicomStudyControllerTest extends BaseWebControllerTest {
 		;
 		MockHttpServletResponse response = new MockHttpServletResponse();
 		
-		ResponseEntity<Object> result = controller.uploadStudies(file, config.getId(), null, request, response);
-		assertEquals(200, result.getStatusCodeValue());
+		assertThrows(IOException.class, () -> controller.uploadStudies(file, config.getId(), null, request, response));
 	}
 	
 	@Test
@@ -278,13 +320,13 @@ public class DicomStudyControllerTest extends BaseWebControllerTest {
 		when(uploadConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
 		when(uploadConnection.getOutputStream()).thenReturn(new ByteArrayOutputStream());
 		when(uploadConnection.getInputStream()).thenReturn(
-		    new ByteArrayInputStream("{\"ID\":\"instance1\",\"ParentStudy\":\"orthanc-study-uploaded\"}"
+		    new ByteArrayInputStream("{\"ID\":\"instance1\",\"Status\":\"Success\",\"ParentStudy\":\"orthanc-study-uploaded\"}"
 		            .getBytes(StandardCharsets.UTF_8)));
 		
 		String studyJson = "{"
 		        + "\"ID\":\"orthanc-study-uploaded\","
 		        + "\"MainDicomTags\":{\"StudyInstanceUID\":\"uploadedStudyController123\",\"StudyDate\":\"20250701\",\"StudyTime\":\"123456\",\"StudyDescription\":\"Uploaded Study\"},"
-		        + "\"PatientMainDicomTags\":{\"PatientName\":\"Uploaded Patient\",\"Gender\":\"M\"}" + "}";
+		        + "\"PatientMainDicomTags\":{\"PatientName\":\"Uploaded Patient\",\"PatientSex\":\"M\"}" + "}";
 		when(studyConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
 		when(studyConnection.getInputStream()).thenReturn(
 		    new ByteArrayInputStream(studyJson.getBytes(StandardCharsets.UTF_8)));
@@ -315,7 +357,7 @@ public class DicomStudyControllerTest extends BaseWebControllerTest {
 		        + "    \"StudyTime\": \"123456\",\n"
 		        + "    \"StudyDescription\": \"Test new or update study description\"\n" + "  },\n"
 		        + "  \"PatientMainDicomTags\": {\n" + "    \"PatientName\": \"TestOrthancPatient\",\n"
-		        + "    \"Gender\": \"M\"\n" + "  }\n" + "}]";
+		        + "    \"PatientSex\": \"M\"\n" + "  }\n" + "}]";
 		
 		ClientConnectionPair pair = setupMockClientWithStatus(200, "POST", "/tools/find", "", config);
 		doNothing().when(pair.getClient()).sendOrthancQuery(any(), anyString());
@@ -334,7 +376,7 @@ public class DicomStudyControllerTest extends BaseWebControllerTest {
 	}
 	
 	@Test
-	public void testAssignStudy_ShouldAssignStudyToPatient() {
+	public void testAssignStudy_ShouldRejectReplacingAnotherPatientsAssociation() {
 		Patient assignedPatient = Context.getPatientService().getPatient(2);
 		String assignPatientUuid = assignedPatient.getUuid();
 		String jsonRequestContent = "{" + "\"studyId\": 1," + "\"patient\": \"" + assignPatientUuid + "\","
@@ -345,10 +387,10 @@ public class DicomStudyControllerTest extends BaseWebControllerTest {
 		
 		ResponseEntity<Object> result = controller.assignStudy(study.getId(), assignedPatient.getUuid(), true, request,
 		    response);
-		assertEquals(200, result.getStatusCodeValue());
-		assertEquals(assignedPatient, study.getMrsPatient());
+		assertEquals(409, result.getStatusCodeValue());
+		assertEquals(patient, study.getMrsPatient());
 		assertEquals(0, study.getLinkStatus());
-		assertEquals(assignPatientUuid, study.getMrsPatient().getUuid());
+		assertEquals(patient.getUuid(), study.getMrsPatient().getUuid());
 	}
 	
 	@Test
@@ -417,6 +459,8 @@ public class DicomStudyControllerTest extends BaseWebControllerTest {
 		    new ByteArrayInputStream("{}".getBytes(StandardCharsets.UTF_8)));
 		dicomStudyService.setHttpClient(pair.getClient());
 		
+		mockResource(pair.getClient(), "/series/SERIES-UID-123",
+		    "{\"ID\":\"SERIES-UID-123\",\"ParentStudy\":\"" + studyBefore.getOrthancStudyUID() + "\"}");
 		MockHttpServletRequest request = newDeleteRequest("/rest/v1/imaging/series",
 		    new Parameter("studyId", String.valueOf(studyBefore.getId())), new Parameter("orthancSeriesUID",
 		            "SERIES-UID-123"));
@@ -439,12 +483,26 @@ public class DicomStudyControllerTest extends BaseWebControllerTest {
 		
 		String orthanceInstanceUID = "instance1";
 		
+		mockResource(mockPair.getClient(), "/instances/instance1",
+		    "{\"ID\":\"instance1\",\"ParentSeries\":\"series1\"}");
+		mockResource(mockPair.getClient(), "/series/series1",
+		    "{\"ID\":\"series1\",\"ParentStudy\":\"" + study.getOrthancStudyUID() + "\"}");
 		ResponseEntity<?> result = controller.previewInstance(orthanceInstanceUID, study.getId());
 		
 		assertNotNull(result);
 		assertEquals(200, result.getStatusCodeValue());
 		assertArrayEquals(fakeImageBytes, (byte[]) result.getBody());
 		assertEquals("image/jpeg", result.getHeaders().get("Content-type").get(0));
+		assertEquals("no-store", result.getHeaders().getFirst("Cache-Control"));
+		assertEquals("nosniff", result.getHeaders().getFirst("X-Content-Type-Options"));
 		
+	}
+
+	private void mockResource(OrthancHttpClient client, String path, String json) throws IOException {
+		HttpURLConnection connection = mock(HttpURLConnection.class);
+		when(client.createConnection("GET", config.getOrthancBaseUrl(), path, config.getOrthancUsername(),
+		    config.getOrthancPassword())).thenReturn(connection);
+		when(connection.getResponseCode()).thenReturn(200);
+		when(connection.getInputStream()).thenReturn(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
 	}
 }

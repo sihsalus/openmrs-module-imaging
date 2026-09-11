@@ -8,6 +8,9 @@
         <id name="id" type="int" column="id" unsaved-value="0">
             <generator class="native" />
         </id>
+        <version name="version" type="integer" unsaved-value="undefined">
+            <column name="version" not-null="true" default="0"/>
+        </version>
         <many-to-one name="requestProcedure" column="requestProcedureId" class="org.openmrs.module.imaging.api.worklist.RequestProcedure" not-null="true"/>
         <property name="modality" type="java.lang.String" column="modality" length="255" not-null="true"/>
         <property name="aetTitle" type="java.lang.String" column="aetTitle" length="255" not-null="true"/>

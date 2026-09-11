@@ -32,7 +32,7 @@
             gender="F" />
 
     <!-- RequestProcedure table -->
-    <imaging_RequestProcedure
+    <imaging_RequestProcedure version="0"
             ID = "1"
             status="in progress"
             patient_id="1"
@@ -44,7 +44,7 @@
             priority="High"/>
 
 <!--  Request procedure step-->
-    <imaging_RequestProcedureStep
+    <imaging_RequestProcedureStep version="0"
             ID = "1"
             requestProcedureId="1"
             modality="CT"
@@ -56,7 +56,7 @@
             performedProcedureStepStatus="scheduled"
             stationName="CT Station"
             procedureStepLocation="Radiology"/>
-    <imaging_RequestProcedureStep
+    <imaging_RequestProcedureStep version="0"
             ID = "2"
             requestProcedureId="1"
             modality="CT"
@@ -68,7 +68,7 @@
             performedProcedureStepStatus="scheduled"
             stationName="CT Station"
             procedureStepLocation="Radiology"/>
-    <imaging_RequestProcedureStep
+    <imaging_RequestProcedureStep version="0"
             ID = "3"
             requestProcedureId="1"
             modality="MRI"

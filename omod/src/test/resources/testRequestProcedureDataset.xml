@@ -60,7 +60,7 @@
             gender="F" />
 
     <!-- RequestProcedure table -->
-    <imaging_RequestProcedure
+    <imaging_RequestProcedure version="0"
             ID = "1"
             status="in progress"
             patient_id="1"
@@ -71,7 +71,7 @@
             requestDescription="Head MRI"
             priority="High"/>
 
-    <imaging_RequestProcedure
+    <imaging_RequestProcedure version="0"
             ID = "2"
             status="completed"
             patient_id="1"
@@ -82,7 +82,7 @@
             requestDescription="Head CT"
             priority="High"/>
 
-    <imaging_RequestProcedure
+    <imaging_RequestProcedure version="0"
             ID = "3"
             status="scheduled"
             patient_id="1"

@@ -14,24 +14,42 @@
 
 package org.openmrs.module.imaging.api.client;
 
-import org.apache.commons.io.IOUtils;
 import org.openmrs.module.imaging.OrthancConfiguration;
 
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Objects;
 
 public class OrthancHttpClient {
 	
 	public HttpURLConnection createConnection(String method, String url, String path, String username, String password)
 	        throws IOException {
-		String encoding = Base64.getEncoder().encodeToString((username + ":" + password).getBytes());
-		URL serverURL = URI.create(url).resolve(path).toURL();
+		URL serverURL;
+		try {
+			URI base = URI.create(url);
+			URI target = base.resolve(path);
+			if (!("http".equalsIgnoreCase(target.getScheme()) || "https".equalsIgnoreCase(target.getScheme()))
+			        || target.getHost() == null || target.getRawUserInfo() != null
+			        || !Objects.equals(base.getRawAuthority(), target.getRawAuthority())
+			        || !Objects.equals(base.getScheme(), target.getScheme())) {
+				throw new IllegalArgumentException();
+			}
+			serverURL = target.toURL();
+		}
+		catch (IllegalArgumentException | NullPointerException e) {
+			throw new IOException("Invalid Orthanc HTTP configuration");
+		}
+		String credentials = (username == null ? "" : username) + ":" + (password == null ? "" : password);
+		String encoding = Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
 		HttpURLConnection con = (HttpURLConnection) serverURL.openConnection();
 		con.setRequestMethod(method);
 		con.setRequestProperty("Authorization", "Basic " + encoding);
 		con.setUseCaches(false);
+		con.setInstanceFollowRedirects(false);
+		con.setConnectTimeout(10000);
+		con.setReadTimeout(60000);
 		return con;
 	}
 	
@@ -57,21 +75,26 @@ public class OrthancHttpClient {
 	 * @throws IOException the IO exception
 	 */
 	public static void throwConnectionException(OrthancConfiguration config, HttpURLConnection con) throws IOException {
-		String errorMessage;
-		try {
-			InputStream errorStream = con.getErrorStream();
-			if (errorStream != null) {
-				errorMessage = IOUtils.toString(errorStream, StandardCharsets.UTF_8);
-			} else {
-				errorMessage = "Unknown error";
-			}
+		// Error bodies may contain DICOM identifiers or patient metadata.
+		try (InputStream ignored = con.getErrorStream()) {
+			// Close without reading or relaying remote content.
+		} catch (IOException ignored) {
+			// Preserve the generic failure even if closing the error stream fails.
 		}
-		catch (IOException e) {
-			errorMessage = "Failed to read error stream: " + e.getMessage();
+		throw new IOException("The Orthanc request could not be completed");
+	}
+
+	public static void closeConnection(HttpURLConnection connection) {
+		if (connection == null) {
+			return;
 		}
-		
-		throw new IOException("Request to Orthanc server " + config.getOrthancBaseUrl() + " failed with error: "
-		        + errorMessage);
+		try (InputStream ignored = connection.getErrorStream()) {
+			// Discard remote error content; it can contain patient metadata.
+		} catch (IOException ignored) {
+			// Disconnect must still run when closing a failed response throws.
+		} finally {
+			connection.disconnect();
+		}
 	}
 	
 	/**
@@ -79,22 +102,25 @@ public class OrthancHttpClient {
 	 * @return
 	 */
 	public boolean isOrthancReachable(OrthancConfiguration config) {
+		HttpURLConnection connection = null;
 		try {
-			URL url = new URL(config.getOrthancBaseUrl() + "/system"); // `/system` is a common endpoint in Orthanc
-			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-			connection.setRequestMethod("GET");
+			if (config == null) {
+				return false;
+			}
+			connection = createConnection("GET", config.getOrthancBaseUrl(), "/system",
+			    config.getOrthancUsername(), config.getOrthancPassword());
 			connection.setConnectTimeout(3000); // 3 seconds timeout
 			connection.setReadTimeout(3000);
-			
-			String auth = config.getOrthancUsername() + ":" + config.getOrthancPassword();
-			String encodeAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
-			connection.setRequestProperty("Authorization", "Basic " + encodeAuth);
 			
 			int responseCode = connection.getResponseCode();
 			return responseCode == 200;
 		}
 		catch (IOException e) {
 			return false;
+		} finally {
+			if (connection != null) {
+				closeConnection(connection);
+			}
 		}
 	}
 	
@@ -107,9 +133,11 @@ public class OrthancHttpClient {
 	 */
 	public int testOrthancConnection(String url, String username, String password) throws IOException {
 		HttpURLConnection con = createConnection("GET", url, "/system", username, password);
-		int status = con.getResponseCode();
-		con.disconnect();
-		return status;
+		try {
+			return con.getResponseCode();
+		} finally {
+			closeConnection(con);
+		}
 	}
 	
 	public int getStatus(HttpURLConnection con) throws IOException {

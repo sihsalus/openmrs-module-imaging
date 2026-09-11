@@ -31,18 +31,26 @@ jobs:
           java-version: 8
           cache: maven
 
-      - name: Compile Imaging
-        run: mvn -B clean package -DskipTests
-
-      - name: Run API tests
-        run: mvn -B -pl api test
+      - name: Verify API and web module
+        run: mvn -B clean verify
 
       - name: Upload Jacoco coverage report
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: api-jacoco-report
-          path: api/target/site/jacoco
+          name: imaging-jacoco-reports
+          path: |
+            api/target/site/jacoco
+            omod/target/site/jacoco
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: imaging-test-results
+          path: |
+            api/target/surefire-reports
+            omod/target/surefire-reports
 
   publish:
     runs-on: ubuntu-latest

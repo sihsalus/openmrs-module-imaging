@@ -8,6 +8,9 @@
         <id name="id" type="int" column="id" unsaved-value="0">
             <generator class="native" />
         </id>
+        <version name="version" type="integer" unsaved-value="undefined">
+            <column name="version" not-null="true" default="0"/>
+        </version>
         <property name="status" type="java.lang.String" column="status" length="255" not-null="true"/>
         <many-to-one name="mrsPatient" column="patient_id" class="org.openmrs.Patient" not-null="true"/>
         <many-to-one name="orthancConfiguration" column="orthancConfigurationId" class="org.openmrs.module.imaging.OrthancConfiguration" not-null="true"/>

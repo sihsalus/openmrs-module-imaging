@@ -13,13 +13,12 @@
 package org.openmrs.module.imaging.web.controller;
 
 import me.xdrop.fuzzywuzzy.FuzzySearch;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.openmrs.annotation.Authorized;
 import org.openmrs.Patient;
 import org.openmrs.api.PatientService;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.imaging.ImagingConstants;
+import org.openmrs.module.imaging.ImagingProperties;
 import org.openmrs.module.imaging.OrthancConfiguration;
 import org.openmrs.module.imaging.api.DicomStudyService;
 import org.openmrs.module.imaging.api.OrthancConfigurationService;
@@ -41,6 +40,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 
 /**
@@ -56,8 +56,6 @@ public class DicomStudyController {
 	    "openmrsOrthanc"));
 	
 	private static final Set<Integer> ALLOWED_LINK_STATUSES = new HashSet<Integer>(Arrays.asList(-1, 0, 1, 2));
-	
-	protected Log log = LogFactory.getLog(this.getClass());
 	
 	/**
 	 * @param patientUuid The openMRS unique patient ID
@@ -108,7 +106,7 @@ public class DicomStudyController {
         try {
             dicomStudyService.fetchNewChangedStudiesByConfiguration(configuration);
         } catch (IOException e) {
-            log.warn("Unable to refresh studies from Orthanc configuration " + configuration.getOrthancBaseUrl(), e);
+            return new ResponseEntity<>("The imaging studies could not be synchronized", HttpStatus.SERVICE_UNAVAILABLE);
         }
         List<DicomStudy> studies = dicomStudyService.getStudiesByConfiguration(configuration);
 
@@ -156,7 +154,7 @@ public class DicomStudyController {
             }
             return new ResponseEntity<>(seriesResponseList, HttpStatus.OK);
         } catch (IOException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("The imaging operation could not be completed", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 	
@@ -187,7 +185,7 @@ public class DicomStudyController {
             }
             return new ResponseEntity<>(instanceResponseList, HttpStatus.OK);
         } catch (IOException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("The imaging operation could not be completed", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 	
@@ -238,7 +236,7 @@ public class DicomStudyController {
 			return new ResponseEntity<>(OrthancConfigurationResponse.createResponse(configuration), HttpStatus.CREATED);
 		}
 		catch (IllegalArgumentException e) {
-			return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+			return new ResponseEntity<>("Invalid Orthanc configuration", HttpStatus.BAD_REQUEST);
 		}
 	}
 	
@@ -248,7 +246,7 @@ public class DicomStudyController {
 	 */
 	@RequestMapping(value = "/instances", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	@Authorized(ImagingConstants.PRIVILEGE_UPLOAD_IMAGE_DATA)
-    @Transactional
+    @Transactional(rollbackFor = IOException.class)
     public ResponseEntity<Object> uploadStudies(    @RequestParam(value="file") MultipartFile file,
                                                     @RequestParam(value="configurationId") int configurationId,
 	                                                @RequestParam(value="patient", required = false) String patientUuid,
@@ -262,6 +260,17 @@ public class DicomStudyController {
         if (file == null || file.isEmpty()) {
             return new ResponseEntity<>("DICOM file is missing", HttpStatus.BAD_REQUEST);
         }
+		String filename = file.getOriginalFilename();
+		if (filename != null && filename.toLowerCase(Locale.ROOT).endsWith(".zip")) {
+			return new ResponseEntity<>("Upload individual DICOM files; ZIP archives are not supported",
+			    HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+		}
+		long maxSize = Context.getRegisteredComponent("imagingProperties", ImagingProperties.class)
+		    .getMaxUploadImageDataSize();
+		if (file.getSize() > maxSize) {
+			return new ResponseEntity<>("The DICOM file exceeds the configured upload limit",
+			    HttpStatus.REQUEST_ENTITY_TOO_LARGE);
+		}
 		Patient patient = null;
 		if (patientUuid != null && !patientUuid.trim().isEmpty()) {
 			PatientService patientService = Context.getPatientService();
@@ -271,14 +280,32 @@ public class DicomStudyController {
 			}
 		}
         DicomStudyService dicomStudyService = Context.getService(DicomStudyService.class);
-		DicomStudyService.UploadResult uploadResult = dicomStudyService.uploadFile(configuration, file.getInputStream());
+		DicomStudyService.UploadResult uploadResult;
+		try (InputStream source = file.getInputStream()) {
+			uploadResult = dicomStudyService.uploadFile(configuration, source);
+		}
+		catch (DicomStudyService.UnsupportedArchiveException e) {
+			return new ResponseEntity<>("Upload individual DICOM files; ZIP archives are not supported",
+			    HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+		}
 		
 		if (patient != null) {
 			if (uploadResult.study == null) {
 				return new ResponseEntity<>("Uploaded study could not be synchronized from Orthanc", HttpStatus.INTERNAL_SERVER_ERROR);
 			}
-			dicomStudyService.setPatient(uploadResult.study, patient);
-			dicomStudyService.updateLinkStatus(uploadResult.study, 0);
+			uploadResult.study = dicomStudyService.getDicomStudyForUpdate(uploadResult.study.getId());
+			if (uploadResult.study == null) {
+				throw new IOException("The uploaded study is no longer available");
+			}
+			if (uploadResult.study.getMrsPatient() != null
+			        && !patient.getUuid().equals(uploadResult.study.getMrsPatient().getUuid())) {
+				return new ResponseEntity<>("The study is already linked to another patient",
+				    HttpStatus.CONFLICT);
+			}
+			if (uploadResult.study.getMrsPatient() == null) {
+				dicomStudyService.setPatient(uploadResult.study, patient);
+				dicomStudyService.updateLinkStatus(uploadResult.study, 0);
+			}
 			return new ResponseEntity<>(DicomStudyResponse.createResponse(uploadResult.study), HttpStatus.OK);
 		}
 		
@@ -314,7 +341,7 @@ public class DicomStudyController {
             }
             return new ResponseEntity<>("", HttpStatus.OK);
         } catch (IOException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("The imaging operation could not be completed", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 	
@@ -337,7 +364,7 @@ public class DicomStudyController {
         }
         PatientService patientService = Context.getPatientService();
         DicomStudyService dicomStudyService = Context.getService(DicomStudyService.class);
-        DicomStudy study = dicomStudyService.getDicomStudy(studyId);
+        DicomStudy study = dicomStudyService.getDicomStudyForUpdate(studyId);
         Patient patient = patientService.getPatientByUuid(patientUuid);
         if (study == null) {
             return new ResponseEntity<>("Study not found", HttpStatus.NOT_FOUND);
@@ -345,10 +372,16 @@ public class DicomStudyController {
         if (patient == null) {
             return new ResponseEntity<>("Patient not found", HttpStatus.NOT_FOUND);
         }
+        Patient owner = study.getMrsPatient();
+        if (owner != null && !patient.getUuid().equals(owner.getUuid())) {
+            return new ResponseEntity<>("The study is linked to another patient", HttpStatus.CONFLICT);
+        }
         if (isAssign) {
-            dicomStudyService.setPatient(study, patient);
-            dicomStudyService.updateLinkStatus(study, 0);
-        } else {
+            if (owner == null) {
+                dicomStudyService.setPatient(study, patient);
+                dicomStudyService.updateLinkStatus(study, 0);
+            }
+        } else if (owner != null) {
             dicomStudyService.setPatient(study,null);
             dicomStudyService.updateLinkStatus(study, -1);
         }
@@ -372,7 +405,7 @@ public class DicomStudyController {
         if (!ALLOWED_LINK_STATUSES.contains(linkStatus)) {
             return new ResponseEntity<>("Invalid linkStatus", HttpStatus.BAD_REQUEST);
         }
-        DicomStudy study = dicomStudyService.getDicomStudy(studyId);
+        DicomStudy study = dicomStudyService.getDicomStudyForUpdate(studyId);
         if (study == null) {
             return new ResponseEntity<>("Study not found", HttpStatus.NOT_FOUND);
         }
@@ -410,7 +443,7 @@ public class DicomStudyController {
             }
             return new ResponseEntity<>("", HttpStatus.OK);
         }catch (IOException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("The imaging operation could not be completed", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 	
@@ -435,7 +468,7 @@ public class DicomStudyController {
             dicomStudyService.deleteSeries(orthancSeriesUID, study);
             return new ResponseEntity<>("", HttpStatus.OK);
         }catch (IOException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("The imaging operation could not be completed", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 	
@@ -458,11 +491,13 @@ public class DicomStudyController {
 			DicomStudyService.PreviewResult previewResult = dicomStudyService
 			        .fetchInstancePreview(orthancInstanceUID, study);
 			HttpHeaders headers = new HttpHeaders();
-			headers.set("Content-type", previewResult.contentType);
+			headers.set("Content-Type", previewResult.contentType);
+			headers.set("Cache-Control", "no-store");
+			headers.set("X-Content-Type-Options", "nosniff");
 			return new ResponseEntity<byte[]>(previewResult.data, headers, HttpStatus.OK);
 		}
 		catch (IOException e) {
-			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+			return new ResponseEntity<String>("The image preview is unavailable", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 	

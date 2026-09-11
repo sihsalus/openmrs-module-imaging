@@ -12,6 +12,7 @@ package org.openmrs.module.imaging;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openmrs.api.context.Context;
+import org.openmrs.api.APIException;
 import org.openmrs.module.BaseModuleActivator;
 import org.springframework.web.multipart.commons.CommonsMultipartResolver;
 
@@ -26,11 +27,40 @@ public class ImagingActivator extends BaseModuleActivator {
 	 * @see #started()
 	 */
 	public void started() {
-		log.error("Started Imaging");
-		ImagingProperties imageProps = Context.getRegisteredComponent("imagingProperties", ImagingProperties.class);
-		long maxUploadImageDataSize = imageProps.getMaxUploadImageDataSize();
-		Context.getRegisteredComponent("multipartResolver", CommonsMultipartResolver.class).setMaxUploadSize(
-		    maxUploadImageDataSize);
+		log.info("Started Imaging");
+	}
+
+	@Override
+	public void contextRefreshed() {
+		// Core rebuilds its shared parser whenever any module refreshes the web
+		// context. This hook runs for all started modules with an OpenMRS session.
+		// Never mutate parser limits during an upload request.
+		CommonsMultipartResolver resolver;
+		try {
+			resolver = Context.getRegisteredComponent("multipartResolver", CommonsMultipartResolver.class);
+		}
+		catch (APIException e) {
+			log.debug("The imaging web multipart parser is unavailable in this context");
+			return;
+		}
+		if (resolver == null) {
+			return; // API-only contexts do not install the web multipart parser.
+		}
+		try {
+			ImagingProperties imageProps = Context.getRegisteredComponent("imagingProperties", ImagingProperties.class);
+			if (imageProps == null) {
+				log.error("Imaging configuration is unavailable; retaining the framework multipart limit");
+				return;
+			}
+			long requestLimit = Math.addExact(imageProps.getMaxUploadImageDataSize(),
+			    ImagingProperties.MULTIPART_OVERHEAD_BYTES);
+			resolver.setMaxUploadSize(requestLimit);
+		}
+		catch (APIException | ArithmeticException e) {
+			// An invalid imaging setting must not break another module's refresh.
+			// The upload controller also validates the GP and rejects such uploads.
+			log.error("Invalid imaging upload limit; retaining the framework multipart limit");
+		}
 	}
 	
 	/**

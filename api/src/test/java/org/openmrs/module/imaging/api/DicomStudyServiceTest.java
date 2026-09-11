@@ -105,7 +105,7 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		service.setHttpClient(pair.getClient());
 
 		IOException thrown = assertThrows(IOException.class, () -> service.fetchAllStudies(config));
-		assertTrue(thrown.getMessage().contains("Request to Orthanc server " + config.getOrthancBaseUrl() + " failed with error"));
+		assertEquals("The imaging resources could not be retrieved", thrown.getMessage());
 	}
 	
 	@Test
@@ -118,7 +118,7 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		when(pair.getConnection().getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
 		
 		String mockJson = "[{" + "\"ID\": \"orthanc123\", " + "\"MainDicomTags\": {\"StudyInstanceUID\": \"abc\"}, "
-		        + "\"PatientMainDicomTags\": {\"PatientName\": \"John Doe\", \"Gender\": \"M\"}" + "}]";
+		        + "\"PatientMainDicomTags\": {\"PatientName\": \"John Doe\", \"PatientSex\": \"M\"}" + "}]";
 		
 		InputStream inputStream = new ByteArrayInputStream(mockJson.getBytes());
 		when(pair.getConnection().getInputStream()).thenReturn(inputStream);
@@ -154,11 +154,11 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		IOException ex = assertThrows(IOException.class, () ->
 				dicomStudyService.fetchAllStudies(config)
 		);
-		assertTrue(ex.getMessage().contains("Request to Orthanc server " + config.getOrthancBaseUrl() + " failed with error"));
+		assertEquals("The imaging resources could not be retrieved", ex.getMessage());
 	}
 	
 	@Test
-	public void testUpload_success() throws IOException {
+	public void testUpload_rejectsSuccessWithoutStudyConfirmation() throws IOException {
 		OrthancConfigurationService orthancConfigurationService = Context.getService(OrthancConfigurationService.class);
 		OrthancConfiguration config = orthancConfigurationService.getOrthancConfiguration(1);
 		
@@ -176,12 +176,9 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		// Inject mock client into service
 		dicomStudyService.setHttpClient(pair.getClient()); // Make sure this sets the client
 		
-		DicomStudyService.UploadResult result = dicomStudyService.uploadFile(config, inputStream);
-		
-		assertEquals(200, result.statusCode);
-		assertNull(result.orthancStudyUID);
-		assertNull(result.study);
-		
+		assertThrows(IOException.class, () -> dicomStudyService.uploadFile(config, inputStream));
+		verify(mockConnection).disconnect();
+
 		String writtenData = outputStream.toString();
 		assertTrue(writtenData.contains("dummy DICOM data"));
 		
@@ -209,13 +206,13 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		when(uploadConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
 		when(uploadConnection.getOutputStream()).thenReturn(new ByteArrayOutputStream());
 		when(uploadConnection.getInputStream()).thenReturn(
-		    new ByteArrayInputStream("{\"ID\":\"instance1\",\"ParentStudy\":\"orthanc-study-1\"}"
+		    new ByteArrayInputStream("{\"ID\":\"instance1\",\"Status\":\"Success\",\"ParentStudy\":\"orthanc-study-1\"}"
 		            .getBytes(StandardCharsets.UTF_8)));
 		
 		String studyJson = "{"
 		        + "\"ID\":\"orthanc-study-1\","
 		        + "\"MainDicomTags\":{\"StudyInstanceUID\":\"uploadedStudy123\",\"StudyDate\":\"20250701\",\"StudyTime\":\"123456\",\"StudyDescription\":\"Uploaded Study\"},"
-		        + "\"PatientMainDicomTags\":{\"PatientName\":\"Uploaded Patient\",\"Gender\":\"M\"}" + "}";
+		        + "\"PatientMainDicomTags\":{\"PatientName\":\"Uploaded Patient\",\"PatientSex\":\"M\"}" + "}";
 		when(studyConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
 		when(studyConnection.getInputStream()).thenReturn(
 		    new ByteArrayInputStream(studyJson.getBytes(StandardCharsets.UTF_8)));
@@ -246,7 +243,7 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		        + "    \"StudyTime\": \"123456\",\n"
 		        + "    \"StudyDescription\": \"Test new or update study description\"\n" + "  },\n"
 		        + "  \"PatientMainDicomTags\": {\n" + "    \"PatientName\": \"TestOrthancPatient\",\n"
-		        + "    \"Gender\": \"M\"\n" + "  }\n" + "}";
+		        + "    \"PatientSex\": \"M\"\n" + "  }\n" + "}";
 		
 		JsonNode jsonData = objectMapper.readTree(jsonString);
 		
@@ -273,7 +270,7 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		        + "    \"StudyInstanceUID\": \"studyInstanceUID444\",\n" + "    \"StudyDate\": \"2025-07-11\",\n"
 		        + "    \"StudyTime\": \"14:35:00\",\n" + "    \"StudyDescription\": \"CT Head without contrast\"\n"
 		        + "  },\n" + "  \"PatientMainDicomTags\": {\n" + "    \"PatientName\": \"Test Imaging\",\n"
-		        + "    \"Gender\": \"F\"\n" + "  }\n" + "}";
+		        + "    \"PatientSex\": \"F\"\n" + "  }\n" + "}";
 		JsonNode studyData = objectMapper.readTree(jsonString);
 		
 		DicomStudy existingStudy = new DicomStudy("studyInstanceUID444", "orthancUID444", 0, 60,
@@ -310,7 +307,7 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		        + "    \"StudyInstanceUID\": \"studyInstanceUID444Updated\",\n" + "    \"StudyDate\": \"2026-05-22\",\n"
 		        + "    \"StudyTime\": \"09:10:11\",\n" + "    \"StudyDescription\": \"Updated from Orthanc\"\n" + "  },\n"
 		        + "  \"PatientMainDicomTags\": {\n" + "    \"PatientName\": \"Edited Patient\",\n"
-		        + "    \"Gender\": \"M\"\n" + "  }\n" + "}";
+		        + "    \"PatientSex\": \"M\"\n" + "  }\n" + "}";
 		JsonNode studyData = objectMapper.readTree(jsonString);
 		
 		DicomStudy existingStudy = dicomStudyDao.getByStudyInstanceUID(config, "studyInstanceUID444");
@@ -341,7 +338,7 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		// Prepare mock response JSON
 		String mockJson = "{\n" + "  \"Changes\": [\n" + "    {\"ChangeType\": \"NewStudy\", \"ID\": \"mock-study-1\"},\n"
 		        + "    {\"ChangeType\": \"StableStudy\", \"ID\": \"mock-study-2\"}\n" + "  ],\n" + "  \"Last\": 100,\n"
-		        + "  \"Done\": \"true\"\n" + "}";
+		        + "  \"Done\": true\n" + "}";
 		
 		// Setup mocked HTTP client + connection
 		String expectedPath = "/changes?limit=1000";
@@ -421,7 +418,7 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		OrthancConfiguration config = study.getOrthancConfiguration();
 		
 		ClientConnectionPair pair = ClientConnectionPair.setupMockClientWithStatus(401, "DELETE",
-		    "/studies/" + study.getStudyInstanceUID(), "Study Not found", config);
+		    "/studies/" + study.getOrthancStudyUID(), "Study Not found", config);
 		
 		DicomStudyServiceImpl test = new DicomStudyServiceImpl();
 		test.setHttpClient(pair.getClient());
@@ -431,7 +428,7 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 			fail("Expected IOException to be thrown due to HTTP error");
 		}
 		catch (IOException e) {
-			assertTrue(e.getMessage().contains("Failed to create HTTP connection"));
+			assertEquals("The study could not be deleted", e.getMessage());
 		}
 		assertNotNull("Study should NOT be removed from DB on HTTP error", dicomStudyDao.get(study.getId()));
 	}
@@ -536,7 +533,7 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		assertEquals("CT", series.get(1).getModality());
 		
 		// Verify that Orthanc query was sent
-		verify(mockPair.getClient()).sendOrthancQuery(eq(mockPair.getConnection()), contains("\"Level\": \"Series\""));
+		verify(mockPair.getClient()).sendOrthancQuery(eq(mockPair.getConnection()), contains("\"Level\":\"Series\""));
 	}
 	
 	@Test
@@ -618,6 +615,10 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		dicomStudyService.setHttpClient(mockPair.getClient());
 		DicomStudy study = dicomStudyService.getDicomStudy(1);
 		
+		mockResource(mockPair.getClient(), config, "/instances/instance1",
+		    "{\"ID\":\"instance1\",\"ParentSeries\":\"series1\"}");
+		mockResource(mockPair.getClient(), config, "/series/series1",
+		    "{\"ID\":\"series1\",\"ParentStudy\":\"" + study.getOrthancStudyUID() + "\"}");
 		DicomStudyService.PreviewResult result = dicomStudyService.fetchInstancePreview("instance1", study);
 		
 		assertNotNull(result);
@@ -626,5 +627,14 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		
 		verify(mockPair.getClient()).createConnection(eq("GET"), eq(config.getOrthancBaseUrl()),
 		    eq("/instances/instance1/preview"), eq(config.getOrthancUsername()), eq(config.getOrthancPassword()));
+	}
+
+	private void mockResource(OrthancHttpClient client, OrthancConfiguration config, String path, String json)
+	        throws IOException {
+		HttpURLConnection connection = mock(HttpURLConnection.class);
+		when(client.createConnection("GET", config.getOrthancBaseUrl(), path, config.getOrthancUsername(),
+		    config.getOrthancPassword())).thenReturn(connection);
+		when(connection.getResponseCode()).thenReturn(200);
+		when(connection.getInputStream()).thenReturn(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
 	}
 }

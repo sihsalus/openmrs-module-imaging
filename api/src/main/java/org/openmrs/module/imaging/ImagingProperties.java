@@ -27,6 +27,9 @@ import org.springframework.stereotype.Component;
 
 @Component("imagingProperties")
 public class ImagingProperties {
+
+	// The parser limits the complete multipart request, including normal form metadata.
+	static final long MULTIPART_OVERHEAD_BYTES = 64L * 1024L;
 	
 	protected final Log log = LogFactory.getLog(getClass());
 	
@@ -76,13 +79,18 @@ public class ImagingProperties {
 	 * @return the global property for the max upload data size
 	 */
 	public Long getMaxUploadImageDataSize() {
-		String globalProperty = administrationService.getGlobalProperty(ImagingConstants.GP_MAX_UPLOAD_IMAGEDATA_SIZE);
+		String globalProperty = administrationService.getGlobalProperty(ImagingConstants.GP_MAX_UPLOAD_IMAGEDATA_SIZE,
+		    "200000000");
 		try {
-			return Long.parseLong(globalProperty);
+			long limit = Long.parseLong(globalProperty.trim());
+			if (limit <= 0) {
+				throw new NumberFormatException();
+			}
+			Math.addExact(limit, MULTIPART_OVERHEAD_BYTES);
+			return limit;
 		}
-		catch (Exception e) {
-			throw new APIException("Global property " + ImagingConstants.GP_MAX_UPLOAD_IMAGEDATA_SIZE + " with value "
-			        + globalProperty + " is not parsable as a long", e);
+		catch (NumberFormatException | NullPointerException | ArithmeticException e) {
+			throw new APIException("The imaging upload size limit must be a positive number of bytes", e);
 		}
 	}
 }

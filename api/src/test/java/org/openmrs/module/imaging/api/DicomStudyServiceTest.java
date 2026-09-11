@@ -338,7 +338,7 @@ public class DicomStudyServiceTest extends BaseModuleContextSensitiveTest {
 		// Prepare mock response JSON
 		String mockJson = "{\n" + "  \"Changes\": [\n" + "    {\"ChangeType\": \"NewStudy\", \"ID\": \"mock-study-1\"},\n"
 		        + "    {\"ChangeType\": \"StableStudy\", \"ID\": \"mock-study-2\"}\n" + "  ],\n" + "  \"Last\": 100,\n"
-		        + "  \"Done\": \"true\"\n" + "}";
+		        + "  \"Done\": true\n" + "}";
 		
 		// Setup mocked HTTP client + connection
 		String expectedPath = "/changes?limit=1000";
